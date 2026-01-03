@@ -1,0 +1,20 @@
+# Code Owners for Routine Chart App
+
+# Global owners
+* @christopherhammers
+
+# iOS specific
+/ios/** @christopherhammers
+
+# Android specific  
+/android/** @christopherhammers
+
+# Backend specific
+/backend/** @christopherhammers
+
+# Documentation
+/docs/** @christopherhammers
+
+# Architecture decisions require review
+/docs/architecture/** @christopherhammers
+

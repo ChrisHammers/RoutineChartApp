@@ -60,3 +60,9 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+ios/PHASE1_IMPLEMENTATION_SUMMARY.md
+ios/.DS_Store
+ios/FILES_CREATED.md
+docs/architecture/Cloud_Data_Model_and_Sync_Spec_V1_Expanded.md
+docs/.DS_Store
+.DS_Store

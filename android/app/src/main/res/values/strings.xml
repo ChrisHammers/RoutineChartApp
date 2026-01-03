@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Routine Chart</string>
+    
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    
+    <!-- Auth -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="display_name">Display Name</string>
+    
+    <!-- Routines -->
+    <string name="routines">Routines</string>
+    <string name="create_routine">Create Routine</string>
+    <string name="routine_title">Routine Title</string>
+    <string name="add_step">Add Step</string>
+    <string name="step_label">Step Label</string>
+    
+    <!-- Children -->
+    <string name="children">Children</string>
+    <string name="add_child">Add Child</string>
+    <string name="child_name">Child Name</string>
+    
+    <!-- Analytics -->
+    <string name="analytics">Analytics</string>
+    <string name="days_practiced">Days Practiced</string>
+    <string name="completions">Completions</string>
+</resources>
+

@@ -1,0 +1,59 @@
+name: Firebase Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/firebase-deploy.yml'
+
+jobs:
+  deploy:
+    name: Deploy to Firebase
+    runs-on: ubuntu-latest
+    
+    # Only run on main branch
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/functions/package-lock.json
+      
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+      
+      - name: Install Functions dependencies
+        working-directory: backend/functions
+        run: npm ci
+      
+      - name: Build Functions
+        working-directory: backend/functions
+        run: npm run build
+      
+      - name: Deploy to Firebase
+        working-directory: backend
+        run: firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
+  # Placeholder steps for manual deployment
+  manual-deploy:
+    name: Manual Deployment Instructions
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Instructions
+        run: |
+          echo "::notice::To deploy Firebase changes manually:"
+          echo "::notice::1. cd backend"
+          echo "::notice::2. firebase login"
+          echo "::notice::3. firebase deploy"
+

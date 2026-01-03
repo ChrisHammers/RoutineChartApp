@@ -1,0 +1,191 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // Helper Functions
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Get the family ID for the current user
+    function getUserFamilyId(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid)).data.familyId;
+    }
+    
+    // Check if user is a parent in the family
+    function isParent(familyId) {
+      return isAuthenticated() 
+        && exists(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid)).data.role == 'parent';
+    }
+    
+    // Check if user is a child in the family
+    function isChild(familyId) {
+      return isAuthenticated() 
+        && exists(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid)).data.role == 'child';
+    }
+    
+    // Get the child ID associated with current user
+    function getUserChildId(familyId) {
+      return get(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid)).data.childId;
+    }
+    
+    // Check if user belongs to this family
+    function isFamilyMember(familyId) {
+      return isAuthenticated() 
+        && exists(/databases/$(database)/documents/families/$(familyId)/users/$(request.auth.uid));
+    }
+    
+    // ============================================
+    // Family Rules
+    // ============================================
+    
+    match /families/{familyId} {
+      // Anyone authenticated can create a family
+      allow create: if isAuthenticated();
+      
+      // Family members can read
+      allow read: if isFamilyMember(familyId);
+      
+      // Only parents can update family settings
+      allow update: if isParent(familyId);
+      
+      // No one can delete families (use soft delete if needed)
+      allow delete: if false;
+      
+      // ============================================
+      // Users (family members)
+      // ============================================
+      
+      match /users/{userId} {
+        // Anyone can create a user (for sign-up flow)
+        allow create: if isAuthenticated() && request.auth.uid == userId;
+        
+        // Family members can read all users in their family
+        allow read: if isFamilyMember(familyId);
+        
+        // Users can update their own profile
+        // Parents can update any user in family
+        allow update: if (isAuthenticated() && request.auth.uid == userId) 
+                      || isParent(familyId);
+        
+        // No one can delete users
+        allow delete: if false;
+      }
+      
+      // ============================================
+      // Child Profiles
+      // ============================================
+      
+      match /children/{childId} {
+        // Family members can read
+        allow read: if isFamilyMember(familyId);
+        
+        // Only parents can create/update/delete child profiles
+        allow create, update: if isParent(familyId);
+        
+        // Soft delete only (set deletedAt field)
+        allow delete: if false;
+      }
+      
+      // ============================================
+      // Routines
+      // ============================================
+      
+      match /routines/{routineId} {
+        // Family members can read routines
+        allow read: if isFamilyMember(familyId);
+        
+        // Only parents can create/update routines
+        allow create, update: if isParent(familyId);
+        
+        // Soft delete only
+        allow delete: if false;
+        
+        // ============================================
+        // Routine Steps
+        // ============================================
+        
+        match /steps/{stepId} {
+          // Family members can read steps
+          allow read: if isFamilyMember(familyId);
+          
+          // Only parents can create/update steps
+          allow create, update: if isParent(familyId);
+          
+          // Soft delete only
+          allow delete: if false;
+        }
+      }
+      
+      // ============================================
+      // Routine Assignments
+      // ============================================
+      
+      match /assignments/{assignmentId} {
+        // Family members can read assignments
+        allow read: if isFamilyMember(familyId);
+        
+        // Only parents can create/update assignments
+        allow create, update: if isParent(familyId);
+        
+        // Soft delete only
+        allow delete: if false;
+      }
+      
+      // ============================================
+      // Completion Events (Append-only log)
+      // ============================================
+      
+      match /events/{eventId} {
+        // Family members can read all events in their family
+        allow read: if isFamilyMember(familyId);
+        
+        // Anyone in family can create events
+        // Parents can create any event
+        // Children can only create events for their own childId
+        allow create: if isAuthenticated() 
+                      && isFamilyMember(familyId)
+                      && (isParent(familyId) 
+                          || (isChild(familyId) 
+                              && request.resource.data.childId == getUserChildId(familyId)));
+        
+        // Events are append-only - NEVER updated or deleted
+        allow update, delete: if false;
+      }
+      
+      // ============================================
+      // Join Tokens (for QR family invite)
+      // ============================================
+      
+      match /joinTokens/{tokenId} {
+        // Parents can read their own join tokens
+        allow read: if isParent(familyId);
+        
+        // Only parents can create join tokens
+        allow create: if isParent(familyId);
+        
+        // Tokens can be marked as "used" by Cloud Function
+        // Regular users cannot update
+        allow update: if false;
+        
+        // Parents can delete expired tokens
+        allow delete: if isParent(familyId);
+      }
+    }
+    
+    // ============================================
+    // Deny all other paths
+    // ============================================
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
