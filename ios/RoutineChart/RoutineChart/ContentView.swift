@@ -11,7 +11,17 @@ struct ContentView: View {
     @EnvironmentObject var dependencies: AppDependencies
     
     var body: some View {
-        ChildTodayView(dependencies: dependencies)
+        TabView {
+            ParentDashboardView(dependencies: dependencies)
+                .tabItem {
+                    Label("Parent", systemImage: "person.fill")
+                }
+            
+            ChildTodayView(dependencies: dependencies)
+                .tabItem {
+                    Label("Child", systemImage: "figure.child")
+                }
+        }
     }
 }
 

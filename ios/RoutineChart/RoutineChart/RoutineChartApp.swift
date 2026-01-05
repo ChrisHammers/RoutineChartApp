@@ -9,6 +9,8 @@ import SwiftUI
 import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    var dependencies: AppDependencies?
+    
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
@@ -27,6 +29,9 @@ struct RoutineChartApp: App {
             if isInitialized {
                 ContentView()
                     .environmentObject(dependencies)
+                    .onAppear {
+                        delegate.dependencies = dependencies
+                    }
             } else {
                 ProgressView("Initializing...")
                     .task {
