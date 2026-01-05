@@ -98,9 +98,6 @@ final class AppDependencies: ObservableObject {
         authRepo.authStatePublisher
             .receive(on: DispatchQueue.main)
             .assign(to: &$currentAuthUser)
-        
-        // Log initial auth state
-        AppLogger.log("AppDependencies initialized. Initial auth user: \(currentAuthUser?.id ?? "nil")")
     }
 }
 
