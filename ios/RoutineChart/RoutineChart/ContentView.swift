@@ -8,17 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var dependencies: AppDependencies
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        ChildTodayView(dependencies: dependencies)
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(AppDependencies())
 }

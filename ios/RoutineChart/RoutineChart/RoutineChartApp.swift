@@ -9,19 +9,47 @@ import SwiftUI
 import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-  func application(_ application: UIApplication,
-                   didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-    FirebaseApp.configure()
-    return true
-  }
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        FirebaseApp.configure()
+        return true
+    }
 }
 
 @main
 struct RoutineChartApp: App {
-  @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var dependencies = AppDependencies()
+    @State private var isInitialized = false
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if isInitialized {
+                ContentView()
+                    .environmentObject(dependencies)
+            } else {
+                ProgressView("Initializing...")
+                    .task {
+                        await initializeApp()
+                    }
+            }
+        }
+    }
+    
+    private func initializeApp() async {
+        do {
+            // Initialize database
+            try SQLiteManager.shared.setup()
+            AppLogger.log("Database initialized")
+            
+            // Seed data if needed
+            try await dependencies.seedDataManager.seedIfNeeded()
+            
+            isInitialized = true
+        } catch {
+            AppLogger.error("Failed to initialize app", error: error)
+            // In production, show error UI
+            fatalError("Failed to initialize: \(error)")
         }
     }
 }
