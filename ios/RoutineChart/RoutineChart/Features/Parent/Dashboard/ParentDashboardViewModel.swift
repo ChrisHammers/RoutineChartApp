@@ -12,17 +12,20 @@ final class ParentDashboardViewModel: ObservableObject {
     private let routineRepository: RoutineRepository
     private let childProfileRepository: ChildProfileRepository
     private let familyRepository: FamilyRepository
+    private let authRepository: AuthRepository
     
     private var familyId: String?
     
     init(
         routineRepository: RoutineRepository,
         childProfileRepository: ChildProfileRepository,
-        familyRepository: FamilyRepository
+        familyRepository: FamilyRepository,
+        authRepository: AuthRepository
     ) {
         self.routineRepository = routineRepository
         self.childProfileRepository = childProfileRepository
         self.familyRepository = familyRepository
+        self.authRepository = authRepository
     }
     
     func loadData() async {
@@ -64,6 +67,16 @@ final class ParentDashboardViewModel: ObservableObject {
         } catch {
             AppLogger.ui.error("Error deleting routine: \(error.localizedDescription)")
             errorMessage = "Failed to delete routine"
+        }
+    }
+    
+    func signOut() {
+        do {
+            try authRepository.signOut()
+            AppLogger.ui.info("User signed out")
+        } catch {
+            AppLogger.ui.error("Error signing out: \(error.localizedDescription)")
+            errorMessage = "Failed to sign out"
         }
     }
 }

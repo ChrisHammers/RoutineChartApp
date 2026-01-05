@@ -10,6 +10,10 @@ import Combine
 
 @MainActor
 final class AppDependencies: ObservableObject {
+    // Auth
+    let authRepo: AuthRepository
+    @Published var currentAuthUser: AuthUser?
+    
     // Repositories
     let familyRepo: FamilyRepository
     let childRepo: ChildProfileRepository
@@ -28,7 +32,11 @@ final class AppDependencies: ObservableObject {
     // Seed Data
     let seedDataManager: SeedDataManager
     
+    // Combine cancellables
+    private var cancellables = Set<AnyCancellable>()
+    
     // Convenience accessors for ViewModels (full names)
+    var authRepository: AuthRepository { authRepo }
     var familyRepository: FamilyRepository { familyRepo }
     var childProfileRepository: ChildProfileRepository { childRepo }
     var routineRepository: RoutineRepository { routineRepo }
@@ -42,6 +50,10 @@ final class AppDependencies: ObservableObject {
     var deriveRoutineCompletionUseCase: DeriveRoutineCompletionUseCase { deriveRoutineCompletion }
     
     init() {
+        // Initialize auth repository
+        self.authRepo = FirebaseAuthService()
+        self.currentAuthUser = authRepo.currentUser
+        
         // Initialize repositories
         self.familyRepo = SQLiteFamilyRepository()
         self.childRepo = SQLiteChildProfileRepository()
@@ -81,6 +93,14 @@ final class AppDependencies: ObservableObject {
             stepRepo: stepRepo,
             assignmentRepo: assignmentRepo
         )
+        
+        // Subscribe to auth state changes
+        authRepo.authStatePublisher
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$currentAuthUser)
+        
+        // Log initial auth state
+        AppLogger.log("AppDependencies initialized. Initial auth user: \(currentAuthUser?.id ?? "nil")")
     }
 }
 

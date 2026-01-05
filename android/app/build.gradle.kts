@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    // id("com.google.gms.google-services")  // Phase 2: Re-enable for Firebase Auth
+    id("com.google.gms.google-services")  // Phase 2.1: Enabled for Firebase Auth
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
 }
@@ -11,7 +11,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.routinechart"
+        applicationId = "com.HammersTech.RoutineChart"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

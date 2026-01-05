@@ -1,7 +1,7 @@
 package com.HammersTech.RoutineChart.app
 
 import android.app.Application
-// import com.google.firebase.FirebaseApp  // Phase 2: Re-enable for Firebase
+import com.google.firebase.FirebaseApp  // Phase 2.1: Enabled for Firebase Auth
 import com.HammersTech.RoutineChart.BuildConfig
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -21,8 +21,9 @@ class RoutineChartApplication : Application() {
             AppLogger.init(BuildConfig.DEBUG)
             AppLogger.UI.info("RoutineChartApplication onCreate started")
             
-            // Phase 2: Re-enable Firebase initialization
-            // FirebaseApp.initializeApp(this)
+            // Phase 2.1: Firebase initialization enabled
+            FirebaseApp.initializeApp(this)
+            AppLogger.UI.info("Firebase initialized")
             
             AppLogger.UI.info("RoutineChartApplication initialized successfully")
         } catch (e: Exception) {

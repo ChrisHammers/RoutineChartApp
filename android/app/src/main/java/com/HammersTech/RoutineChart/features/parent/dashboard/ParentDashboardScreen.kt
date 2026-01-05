@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +56,15 @@ fun ParentDashboardScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Routines") }
+                    title = { Text("Routines") },
+                    actions = {
+                        IconButton(onClick = { viewModel.signOut() }) {
+                            Icon(
+                                imageVector = Icons.Default.Logout,
+                                contentDescription = "Sign Out"
+                            )
+                        }
+                    }
                 )
             },
             floatingActionButton = {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Routine
+import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
@@ -23,7 +24,8 @@ import javax.inject.Inject
 class ParentDashboardViewModel @Inject constructor(
     private val familyRepository: FamilyRepository,
     private val routineRepository: RoutineRepository,
-    private val childProfileRepository: ChildProfileRepository
+    private val childProfileRepository: ChildProfileRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ParentDashboardState())
@@ -84,6 +86,18 @@ class ParentDashboardViewModel @Inject constructor(
             } catch (e: Exception) {
                 AppLogger.UI.error("Error deleting routine: ${e.message}", e)
                 _state.update { it.copy(error = "Failed to delete routine") }
+            }
+        }
+    }
+    
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                authRepository.signOut()
+                AppLogger.UI.info("User signed out")
+            } catch (e: Exception) {
+                AppLogger.UI.error("Error signing out: ${e.message}", e)
+                _state.update { it.copy(error = "Failed to sign out") }
             }
         }
     }

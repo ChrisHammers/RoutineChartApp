@@ -11,7 +11,8 @@ struct ParentDashboardView: View {
         _viewModel = StateObject(wrappedValue: ParentDashboardViewModel(
             routineRepository: dependencies.routineRepository,
             childProfileRepository: dependencies.childProfileRepository,
-            familyRepository: dependencies.familyRepository
+            familyRepository: dependencies.familyRepository,
+            authRepository: dependencies.authRepository
         ))
     }
     
@@ -38,6 +39,11 @@ struct ParentDashboardView: View {
             }
             .navigationTitle("Routines")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { viewModel.signOut() }) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingRoutineBuilder = true }) {
                         Image(systemName: "plus")
