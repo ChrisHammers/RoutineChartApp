@@ -9,15 +9,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,17 +35,33 @@ import androidx.hilt.navigation.compose.hiltViewModel
  */
 @Composable
 fun ChildSignInScreen(
-    viewModel: ChildSignInViewModel = hiltViewModel()
+    viewModel: ChildSignInViewModel = hiltViewModel(),
+    onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(40.dp),
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Back button at top
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            TextButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+                Text("Back")
+            }
+        }
+        
         Spacer(modifier = Modifier.weight(1f))
         
         // Header
@@ -105,9 +122,10 @@ fun ChildSignInScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(32.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                    Text(
+                        text = "Loading...",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold
                     )
                 } else {
                     Icon(

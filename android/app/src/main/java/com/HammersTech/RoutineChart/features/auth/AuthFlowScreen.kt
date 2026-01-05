@@ -51,8 +51,12 @@ fun AuthFlowScreen() {
         label = "auth_flow_animation"
     ) { mode ->
         when (mode) {
-            AuthMode.PARENT -> ParentSignInScreen()
-            AuthMode.CHILD -> ChildSignInScreen()
+            AuthMode.PARENT -> ParentSignInScreen(
+                onBack = { selectedMode = null }
+            )
+            AuthMode.CHILD -> ChildSignInScreen(
+                onBack = { selectedMode = null }
+            )
             null -> AuthModeSelectionScreen(
                 onModeSelected = { selectedMode = it }
             )

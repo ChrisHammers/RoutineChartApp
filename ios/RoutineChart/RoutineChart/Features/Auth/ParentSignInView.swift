@@ -10,19 +10,34 @@ import SwiftUI
 struct ParentSignInView: View {
     @StateObject private var viewModel: ParentSignInViewModel
     @FocusState private var focusedField: Field?
+    let onBack: () -> Void
     
     enum Field {
         case email, password
     }
     
-    init(authRepository: AuthRepository) {
+    init(authRepository: AuthRepository, onBack: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: ParentSignInViewModel(authRepository: authRepository))
+        self.onBack = onBack
     }
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Back button
+                    HStack {
+                        Button(action: onBack) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                Text("Back")
+                            }
+                            .foregroundColor(.blue)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
                     // Header
                     VStack(spacing: 8) {
                         Image(systemName: "person.circle.fill")
@@ -142,7 +157,7 @@ struct ParentSignInView: View {
 
 struct ParentSignInView_Previews: PreviewProvider {
     static var previews: some View {
-        ParentSignInView(authRepository: FirebaseAuthService())
+        ParentSignInView(authRepository: FirebaseAuthService(), onBack: {})
     }
 }
 

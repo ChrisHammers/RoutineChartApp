@@ -9,13 +9,30 @@ import SwiftUI
 
 struct ChildSignInView: View {
     @StateObject private var viewModel: ChildSignInViewModel
+    let onBack: () -> Void
     
-    init(authRepository: AuthRepository) {
+    init(authRepository: AuthRepository, onBack: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: ChildSignInViewModel(authRepository: authRepository))
+        self.onBack = onBack
     }
     
     var body: some View {
         VStack(spacing: 32) {
+            // Back button
+            HStack {
+                Button(action: onBack) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                    }
+                    .foregroundColor(.green)
+                    .font(.title3)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            
             Spacer()
             
             // Header
@@ -81,7 +98,7 @@ struct ChildSignInView: View {
 
 struct ChildSignInView_Previews: PreviewProvider {
     static var previews: some View {
-        ChildSignInView(authRepository: FirebaseAuthService())
+        ChildSignInView(authRepository: FirebaseAuthService(), onBack: {})
     }
 }
 

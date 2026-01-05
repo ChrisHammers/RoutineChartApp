@@ -2,6 +2,7 @@ package com.HammersTech.RoutineChart.features.auth.parent
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -41,7 +42,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
  */
 @Composable
 fun ParentSignInScreen(
-    viewModel: ParentSignInViewModel = hiltViewModel()
+    viewModel: ParentSignInViewModel = hiltViewModel(),
+    onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -54,7 +56,22 @@ fun ParentSignInScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(40.dp))
+        // Back button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            TextButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+                Spacer(modifier = Modifier.size(4.dp))
+                Text("Back")
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
         
         // Header
         Icon(
@@ -140,18 +157,17 @@ fun ParentSignInScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = state.canSubmit
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text(
-                    text = if (state.isSignUpMode) "Create Account" else "Sign In",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Text(
+                text = if (state.isLoading) {
+                    "Loading..."
+                } else if (state.isSignUpMode) {
+                    "Create Account"
+                } else {
+                    "Sign In"
+                },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
         }
         
         // Toggle Sign Up/Sign In

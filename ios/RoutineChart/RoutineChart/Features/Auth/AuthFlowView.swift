@@ -21,11 +21,17 @@ struct AuthFlowView: View {
                 // Show selected sign-in view
                 switch mode {
                 case .parent:
-                    ParentSignInView(authRepository: dependencies.authRepository)
-                        .transition(.move(edge: .trailing))
+                    ParentSignInView(
+                        authRepository: dependencies.authRepository,
+                        onBack: { selectedMode = nil }
+                    )
+                    .transition(.move(edge: .trailing))
                 case .child:
-                    ChildSignInView(authRepository: dependencies.authRepository)
-                        .transition(.move(edge: .trailing))
+                    ChildSignInView(
+                        authRepository: dependencies.authRepository,
+                        onBack: { selectedMode = nil }
+                    )
+                    .transition(.move(edge: .trailing))
                 }
             } else {
                 // Show mode selection
