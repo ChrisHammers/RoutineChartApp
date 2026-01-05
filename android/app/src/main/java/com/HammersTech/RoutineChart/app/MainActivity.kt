@@ -71,7 +71,9 @@ fun MainScreen() {
         }
     ) { paddingValues ->
         when (selectedTab) {
-            0 -> ParentDashboardScreen()
+            0 -> ParentDashboardScreen(
+                modifier = Modifier.padding(paddingValues)
+            )
             1 -> ChildTodayScreen()
         }
     }

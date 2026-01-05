@@ -73,9 +73,14 @@ class ParentDashboardViewModel @Inject constructor(
     fun deleteRoutine(routineId: String) {
         viewModelScope.launch {
             try {
-                routineRepository.softDelete(routineId)
-                loadData() // Reload
-                AppLogger.UI.info("Deleted routine: $routineId")
+                // Soft delete by setting deletedAt
+                val routine = routineRepository.getById(routineId)
+                if (routine != null) {
+                    val deleted = routine.copy(deletedAt = java.time.Instant.now())
+                    routineRepository.update(deleted)
+                    loadData() // Reload
+                    AppLogger.UI.info("Deleted routine: $routineId")
+                }
             } catch (e: Exception) {
                 AppLogger.UI.error("Error deleting routine: ${e.message}", e)
                 _state.update { it.copy(error = "Failed to delete routine") }

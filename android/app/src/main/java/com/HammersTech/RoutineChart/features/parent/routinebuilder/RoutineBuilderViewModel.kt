@@ -161,9 +161,12 @@ class RoutineBuilderViewModel @Inject constructor(
 
                     routineRepository.update(updated)
 
-                    // Delete old steps
+                    // Delete old steps (soft delete)
                     val oldSteps = routineStepRepository.getByRoutineId(state.existingRoutine.id)
-                    oldSteps.forEach { routineStepRepository.softDelete(it.id) }
+                    oldSteps.forEach { step ->
+                        val deleted = step.copy(deletedAt = Instant.now())
+                        routineStepRepository.update(deleted)
+                    }
 
                     // Create new steps
                     state.steps.forEachIndexed { index, stepInput ->

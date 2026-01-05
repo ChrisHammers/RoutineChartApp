@@ -44,34 +44,36 @@ import com.HammersTech.RoutineChart.features.parent.routinebuilder.RoutineBuilde
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParentDashboardScreen(
+    modifier: Modifier = Modifier,
     viewModel: ParentDashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
     var showRoutineBuilder by remember { mutableStateOf(false) }
     var editingRoutine by remember { mutableStateOf<Routine?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Routines") }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    editingRoutine = null
-                    showRoutineBuilder = true
+    Box(modifier = modifier) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Routines") }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        editingRoutine = null
+                        showRoutineBuilder = true
+                    }
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Routine")
                 }
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Routine")
             }
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
             when {
                 state.isLoading -> {
                     Text(
@@ -129,7 +131,7 @@ fun ParentDashboardScreen(
         }
     }
 
-    // Routine Builder Dialog/Sheet
+    // Routine Builder Dialog/Sheet - Outside the Scaffold
     if (showRoutineBuilder) {
         RoutineBuilderScreen(
             routine = editingRoutine,
@@ -139,6 +141,7 @@ fun ParentDashboardScreen(
                 viewModel.loadData()
             }
         )
+    }
     }
 }
 
