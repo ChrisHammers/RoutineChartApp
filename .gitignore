@@ -67,3 +67,5 @@ docs/architecture/Cloud_Data_Model_and_Sync_Spec_V1_Expanded.md
 docs/.DS_Store
 .DS_Store
 ios/RoutineChart/RoutineChart/GoogleService-Info.plist
+android/app/google-services.json
+.cursorrules

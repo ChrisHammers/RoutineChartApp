@@ -41,7 +41,7 @@ fastlane/test_output
 iOSInjectionProject/
 
 # Firebase
-ios/RoutineChart/RoutineChart/RoutineChartApp.swift
+ios/RoutineChart/RoutineChart/Google-Services-Info.plist
 
 # OS Files
 .DS_Store

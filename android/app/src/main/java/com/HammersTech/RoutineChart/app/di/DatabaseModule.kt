@@ -1,0 +1,73 @@
+package com.HammersTech.RoutineChart.app.di
+
+import android.content.Context
+import androidx.room.Room
+import com.HammersTech.RoutineChart.core.data.local.room.RoutineChartDatabase
+import com.HammersTech.RoutineChart.core.data.local.room.dao.ChildProfileDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.CompletionEventDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.FamilyDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineAssignmentDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineStepDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.UserDao
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+/**
+ * Hilt module for database and DAO dependencies
+ */
+@Module
+@InstallIn(SingletonComponent::class)
+object DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): RoutineChartDatabase {
+        return Room.databaseBuilder(
+            context,
+            RoutineChartDatabase::class.java,
+            RoutineChartDatabase.DATABASE_NAME
+        )
+            .fallbackToDestructiveMigration() // Phase 1: Dev only
+            .build()
+    }
+
+    @Provides
+    fun provideFamilyDao(database: RoutineChartDatabase): FamilyDao {
+        return database.familyDao()
+    }
+
+    @Provides
+    fun provideUserDao(database: RoutineChartDatabase): UserDao {
+        return database.userDao()
+    }
+
+    @Provides
+    fun provideChildProfileDao(database: RoutineChartDatabase): ChildProfileDao {
+        return database.childProfileDao()
+    }
+
+    @Provides
+    fun provideRoutineDao(database: RoutineChartDatabase): RoutineDao {
+        return database.routineDao()
+    }
+
+    @Provides
+    fun provideRoutineStepDao(database: RoutineChartDatabase): RoutineStepDao {
+        return database.routineStepDao()
+    }
+
+    @Provides
+    fun provideRoutineAssignmentDao(database: RoutineChartDatabase): RoutineAssignmentDao {
+        return database.routineAssignmentDao()
+    }
+
+    @Provides
+    fun provideCompletionEventDao(database: RoutineChartDatabase): CompletionEventDao {
+        return database.completionEventDao()
+    }
+}
+
