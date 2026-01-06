@@ -16,6 +16,7 @@ final class GenerateInviteViewModel: ObservableObject {
     @Published var invite: FamilyInvite?
     @Published var errorMessage: String?
     @Published var isLoading = false
+    @Published var loadingMessage = "Loading..."
     @Published var timeRemaining: String = ""
     
     private let inviteRepository: FamilyInviteRepository
@@ -35,8 +36,39 @@ final class GenerateInviteViewModel: ObservableObject {
         timer?.invalidate()
     }
     
+    func loadActiveInvite() async {
+        isLoading = true
+        loadingMessage = "Loading..."
+        errorMessage = nil
+        
+        do {
+            // Get the current family
+            guard let family = try await familyRepository.getAll().first else {
+                isLoading = false
+                return
+            }
+            
+            // Get all active invites for this family
+            let activeInvites = try await inviteRepository.getActiveInvites(familyId: family.id)
+            
+            // Find the first valid (not expired, not max uses) invite
+            if let validInvite = activeInvites.first(where: { $0.isValid }) {
+                self.invite = validInvite
+                self.qrCodeImage = QRCodeGenerator.generate(for: validInvite)
+                startTimer()
+                AppLogger.ui.info("Loaded existing active invite: \(validInvite.id)")
+            }
+        } catch {
+            AppLogger.ui.error("Failed to load active invite: \(error.localizedDescription)")
+            // Don't show error to user - just proceed to generate new one if needed
+        }
+        
+        isLoading = false
+    }
+    
     func generateInvite() async {
         isLoading = true
+        loadingMessage = "Generating invite..."
         errorMessage = nil
         
         do {
@@ -96,11 +128,71 @@ final class GenerateInviteViewModel: ObservableObject {
         }
     }
     
-    func shareInvite() {
-        guard let url = invite?.qrCodeURL() else { return }
+    func shareableImage(for invite: FamilyInvite, qrImage: UIImage) -> UIImage? {
+        // Create a composite image with QR code and invite code text
+        let size = CGSize(width: 600, height: 800)
+        let renderer = UIGraphicsImageRenderer(size: size)
         
-        // TODO: Implement sharing functionality
-        AppLogger.ui.info("Share invite URL: \(url)")
+        return renderer.image { context in
+            // White background
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+            
+            // Title text
+            let titleText = "Join my family on Routine Chart!"
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 28, weight: .bold),
+                .foregroundColor: UIColor.label
+            ]
+            let titleSize = titleText.size(withAttributes: titleAttributes)
+            let titleRect = CGRect(
+                x: (size.width - titleSize.width) / 2,
+                y: 40,
+                width: titleSize.width,
+                height: titleSize.height
+            )
+            titleText.draw(in: titleRect, withAttributes: titleAttributes)
+            
+            // Invite code text
+            let codeText = "Invite Code: \(invite.inviteCode)"
+            let codeAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.monospacedSystemFont(ofSize: 32, weight: .bold),
+                .foregroundColor: UIColor.systemBlue
+            ]
+            let codeSize = codeText.size(withAttributes: codeAttributes)
+            let codeRect = CGRect(
+                x: (size.width - codeSize.width) / 2,
+                y: titleRect.maxY + 30,
+                width: codeSize.width,
+                height: codeSize.height
+            )
+            codeText.draw(in: codeRect, withAttributes: codeAttributes)
+            
+            // QR Code (centered, larger)
+            let qrSize: CGFloat = 400
+            let qrRect = CGRect(
+                x: (size.width - qrSize) / 2,
+                y: codeRect.maxY + 40,
+                width: qrSize,
+                height: qrSize
+            )
+            qrImage.draw(in: qrRect)
+            
+            // Instructions text
+            let instructionText = "Scan the QR code or use the invite code above"
+            let instructionAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 18, weight: .regular),
+                .foregroundColor: UIColor.secondaryLabel
+            ]
+            let instructionSize = instructionText.size(withAttributes: instructionAttributes)
+            let instructionRect = CGRect(
+                x: (size.width - instructionSize.width) / 2,
+                y: qrRect.maxY + 30,
+                width: instructionSize.width,
+                height: instructionSize.height
+            )
+            instructionText.draw(in: instructionRect, withAttributes: instructionAttributes)
+        }
     }
     
     private func startTimer() {

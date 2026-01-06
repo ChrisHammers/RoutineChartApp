@@ -7,6 +7,7 @@
 
 import SwiftUI
 import FirebaseCore
+import OSLog
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     var dependencies: AppDependencies?
@@ -52,7 +53,7 @@ struct RoutineChartApp: App {
             
             isInitialized = true
         } catch {
-            AppLogger.error("Failed to initialize app", error: error)
+            AppLogger.error("Failed to initialize app: \(error.localizedDescription)")
             // In production, show error UI
             fatalError("Failed to initialize: \(error)")
         }

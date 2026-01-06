@@ -22,13 +22,9 @@ struct AppLogger {
         logger.info("\(message)")
     }
     
-    static func error(_ message: String, error: Error? = nil, category: String = "general") {
+    static func error(_ message: String, category: String = "general") {
         let logger = Logger(subsystem: subsystem, category: category)
-        if let error = error {
-            logger.error("\(message): \(error.localizedDescription)")
-        } else {
-            logger.error("\(message)")
-        }
+        logger.error("\(message)")
     }
 }
 

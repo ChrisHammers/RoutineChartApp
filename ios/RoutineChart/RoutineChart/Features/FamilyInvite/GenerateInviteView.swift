@@ -6,10 +6,21 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
+
+// Make UIImage shareable with ShareLink
+extension UIImage: Transferable {
+    public static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(exportedContentType: .png) { image in
+            image.pngData() ?? Data()
+        }
+    }
+}
 
 struct GenerateInviteView: View {
     @StateObject private var viewModel: GenerateInviteViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var showCopyConfirmation = false
     
     init(dependencies: AppDependencies) {
         _viewModel = StateObject(
@@ -25,7 +36,7 @@ struct GenerateInviteView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     if viewModel.isLoading {
-                        ProgressView("Generating invite...")
+                        ProgressView(viewModel.loadingMessage)
                             .padding()
                     } else if let qrImage = viewModel.qrCodeImage, let invite = viewModel.invite {
                         // QR Code Display
@@ -35,19 +46,42 @@ struct GenerateInviteView: View {
                                 .fontWeight(.semibold)
                             
                             // Large, copyable invite code
-                            Text(invite.inviteCode)
-                                .font(.system(size: 48, weight: .bold, design: .monospaced))
-                                .foregroundColor(.primary)
-                                .padding()
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                                .onTapGesture {
-                                    UIPasteboard.general.string = invite.inviteCode
+                            VStack(spacing: 8) {
+                                Text(invite.inviteCode)
+                                    .font(.system(size: 48, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.primary)
+                                    .padding()
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(12)
+                                    .onTapGesture {
+                                        UIPasteboard.general.string = invite.inviteCode
+                                        withAnimation {
+                                            showCopyConfirmation = true
+                                        }
+                                        // Hide confirmation after 2 seconds
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                            withAnimation {
+                                                showCopyConfirmation = false
+                                            }
+                                        }
+                                    }
+                                
+                                if showCopyConfirmation {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                        Text("Copied!")
+                                            .font(.caption)
+                                            .foregroundColor(.green)
+                                    }
+                                    .transition(.opacity.combined(with: .scale))
+                                } else {
+                                    Text("Tap code to copy • Share with others")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .transition(.opacity)
                                 }
-                            
-                            Text("Tap code to copy • Share with others")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            }
                             
                             Divider()
                                 .padding(.vertical, 8)
@@ -71,11 +105,19 @@ struct GenerateInviteView: View {
                             
                             // Actions
                             HStack(spacing: 16) {
-                                Button(action: { viewModel.shareInvite() }) {
-                                    Label("Share", systemImage: "square.and.arrow.up")
-                                        .frame(maxWidth: .infinity)
+                                if let shareableImage = viewModel.shareableImage(for: invite, qrImage: qrImage) {
+                                    ShareLink(
+                                        item: shareableImage,
+                                        preview: SharePreview(
+                                            "Join my family on Routine Chart",
+                                            image: Image(uiImage: shareableImage)
+                                        )
+                                    ) {
+                                        Label("Share", systemImage: "square.and.arrow.up")
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    .buttonStyle(.bordered)
                                 }
-                                .buttonStyle(.bordered)
                                 
                                 Button(role: .destructive, action: {
                                     Task {
@@ -142,6 +184,10 @@ struct GenerateInviteView: View {
                         dismiss()
                     }
                 }
+            }
+            .task {
+                // Load existing active invite when view appears
+                await viewModel.loadActiveInvite()
             }
         }
     }

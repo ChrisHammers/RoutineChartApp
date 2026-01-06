@@ -168,7 +168,6 @@ final class SQLiteManager {
                 t.column("familyId", .text).notNull()
                     .references("families", onDelete: .cascade)
                 t.column("token", .text).notNull().unique()
-                t.column("inviteCode", .text).notNull().unique()
                 t.column("createdBy", .text).notNull()
                 t.column("createdAt", .datetime).notNull()
                 t.column("expiresAt", .datetime).notNull()
@@ -180,9 +179,70 @@ final class SQLiteManager {
             // Indexes for family invites
             try db.create(index: "idx_family_invites_familyId", on: "family_invites", columns: ["familyId"])
             try db.create(index: "idx_family_invites_token", on: "family_invites", columns: ["token"])
-            try db.create(index: "idx_family_invites_inviteCode", on: "family_invites", columns: ["inviteCode"])
             
             AppLogger.database.info("Database schema v2 created - added family_invites table")
+        }
+        
+        // V3: Add inviteCode column to family_invites table
+        migrator.registerMigration("v3") { db in
+            // Only proceed if table exists (should always be true since v2 creates it)
+            guard try db.tableExists("family_invites") else {
+                AppLogger.database.info("Database schema v3 skipped - family_invites table does not exist")
+                return
+            }
+            
+            // Check if column exists using pragma_table_info
+            let columnExists: Bool = {
+                do {
+                    let count = try Int.fetchOne(
+                        db,
+                        sql: "SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?",
+                        arguments: ["family_invites", "inviteCode"]
+                    ) ?? 0
+                    return count > 0
+                } catch {
+                    // If pragma fails, assume column doesn't exist
+                    return false
+                }
+            }()
+            
+            if !columnExists {
+                try db.alter(table: "family_invites") { t in
+                    t.add(column: "inviteCode", .text).notNull().defaults(to: "")
+                }
+                
+                // Update existing rows with generated invite codes
+                let inviteIds = try String.fetchAll(db, sql: "SELECT id FROM family_invites")
+                for inviteId in inviteIds {
+                    // Generate unique code
+                    var code = InviteCodeGenerator.generateInviteCode()
+                    var attempts = 0
+                    while attempts < 10 {
+                        // Check if code already exists
+                        let existingCount = try Int.fetchOne(
+                            db,
+                            sql: "SELECT COUNT(*) FROM family_invites WHERE inviteCode = ?",
+                            arguments: [code]
+                        ) ?? 0
+                        if existingCount == 0 {
+                            break
+                        }
+                        code = InviteCodeGenerator.generateInviteCode()
+                        attempts += 1
+                    }
+                    try db.execute(
+                        sql: "UPDATE family_invites SET inviteCode = ? WHERE id = ?",
+                        arguments: [code, inviteId]
+                    )
+                }
+                
+                // Now add unique constraint
+                try db.execute(sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_family_invites_inviteCode ON family_invites(inviteCode)")
+                
+                AppLogger.database.info("Database schema v3 created - added inviteCode column to family_invites")
+            } else {
+                AppLogger.database.info("Database schema v3 skipped - inviteCode column already exists")
+            }
         }
         
         return migrator

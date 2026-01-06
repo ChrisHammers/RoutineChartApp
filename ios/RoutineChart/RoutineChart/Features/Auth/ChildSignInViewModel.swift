@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import OSLog
 
 @MainActor
 final class ChildSignInViewModel: ObservableObject {
@@ -27,7 +28,7 @@ final class ChildSignInViewModel: ObservableObject {
             _ = try await authRepository.signInAnonymously()
             AppLogger.log("Child signed in anonymously")
         } catch {
-            AppLogger.error("Child sign in failed", error: error)
+            AppLogger.error("Child sign in failed: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
         

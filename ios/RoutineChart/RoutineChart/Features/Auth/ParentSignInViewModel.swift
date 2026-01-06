@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import OSLog
 
 @MainActor
 final class ParentSignInViewModel: ObservableObject {
@@ -41,7 +42,7 @@ final class ParentSignInViewModel: ObservableObject {
                 AppLogger.log("Parent signed in successfully")
             }
         } catch {
-            AppLogger.error("Parent sign in failed", error: error)
+            AppLogger.error("Parent sign in failed: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
         
@@ -67,7 +68,7 @@ final class ParentSignInViewModel: ObservableObject {
             errorMessage = "Password reset email sent! Check your inbox."
             AppLogger.log("Password reset email sent to: \(email)")
         } catch {
-            AppLogger.error("Password reset failed", error: error)
+            AppLogger.error("Password reset failed: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
         }
         

@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import GRDB
+import OSLog
 
 @MainActor
 final class ChildTodayViewModel: ObservableObject {
@@ -64,7 +65,7 @@ final class ChildTodayViewModel: ObservableObject {
             }
         } catch {
             self.error = error.localizedDescription
-            AppLogger.error("Failed to load data", error: error)
+            AppLogger.error("Failed to load data: \(error.localizedDescription)")
         }
     }
     
@@ -97,7 +98,7 @@ final class ChildTodayViewModel: ObservableObject {
             await loadRoutines()
         } catch {
             self.error = error.localizedDescription
-            AppLogger.error("Failed to toggle step", error: error)
+            AppLogger.error("Failed to toggle step: \(error.localizedDescription)")
         }
     }
     
@@ -133,7 +134,7 @@ final class ChildTodayViewModel: ObservableObject {
             routines = result
         } catch {
             self.error = error.localizedDescription
-            AppLogger.error("Failed to load routines", error: error)
+            AppLogger.error("Failed to load routines: \(error.localizedDescription)")
         }
     }
     
