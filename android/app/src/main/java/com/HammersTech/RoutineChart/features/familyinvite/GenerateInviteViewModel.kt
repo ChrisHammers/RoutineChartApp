@@ -7,8 +7,10 @@ import com.HammersTech.RoutineChart.core.domain.models.FamilyInvite
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.utils.AppLogger
+import com.HammersTech.RoutineChart.core.utils.InviteCodeGenerator
 import com.HammersTech.RoutineChart.core.utils.QRCodeGenerator
 import com.HammersTech.RoutineChart.core.utils.TokenGenerator
+import com.HammersTech.RoutineChart.core.utils.ULIDGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +32,7 @@ class GenerateInviteViewModel @Inject constructor(
     
     data class UiState(
         val isLoading: Boolean = false,
+        val loadingMessage: String = "Loading...",
         val qrCodeBitmap: Bitmap? = null,
         val invite: FamilyInvite? = null,
         val errorMessage: String? = null,
@@ -41,9 +44,58 @@ class GenerateInviteViewModel @Inject constructor(
     
     private var timerJob: kotlinx.coroutines.Job? = null
     
+    fun loadActiveInvite() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoading = true,
+                loadingMessage = "Loading...",
+                errorMessage = null
+            )
+            
+            try {
+                // Get the current family
+                val family = familyRepository.getAll().firstOrNull()
+                if (family == null) {
+                    _state.value = _state.value.copy(isLoading = false)
+                    return@launch
+                }
+                
+                // Get all active invites for this family
+                val activeInvites = inviteRepository.getActiveInvites(family.id)
+                
+                // Find the first valid (not expired, not max uses) invite
+                val validInvite = activeInvites.firstOrNull { it.isValid }
+                
+                if (validInvite != null) {
+                    // Generate QR code
+                    val qrCode = QRCodeGenerator.generate(validInvite)
+                    
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        invite = validInvite,
+                        qrCodeBitmap = qrCode
+                    )
+                    
+                    // Start timer to update time remaining
+                    startTimer()
+                    AppLogger.UI.info("Loaded existing active invite: ${validInvite.id}")
+                }
+            } catch (e: Exception) {
+                AppLogger.UI.error("Failed to load active invite", e)
+                // Don't show error to user - just proceed to generate new one if needed
+            }
+            
+            _state.value = _state.value.copy(isLoading = false)
+        }
+    }
+    
     fun generateInvite() {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _state.value = _state.value.copy(
+                isLoading = true,
+                loadingMessage = "Generating invite...",
+                errorMessage = null
+            )
             
             try {
                 // Get the current family
@@ -61,12 +113,14 @@ class GenerateInviteViewModel @Inject constructor(
                 
                 // Create invite
                 val token = TokenGenerator.generateSecureToken()
+                val inviteCode = InviteCodeGenerator.generateInviteCode()
                 val expiresAt = Instant.now().plusSeconds(86400) // 24 hours
                 
                 val newInvite = FamilyInvite(
-                    id = com.github.guepardoapps.kulid.ULID.random(),
+                    id = ULIDGenerator.generate(),
                     familyId = family.id,
                     token = token,
+                    inviteCode = inviteCode,
                     createdBy = createdBy,
                     expiresAt = expiresAt
                 )
@@ -114,10 +168,61 @@ class GenerateInviteViewModel @Inject constructor(
         }
     }
     
-    fun shareInvite() {
-        val url = _state.value.invite?.qrCodeURL() ?: return
-        // TODO: Implement sharing functionality
-        AppLogger.UI.info("Share invite URL: $url")
+    fun shareableImage(invite: FamilyInvite, qrBitmap: Bitmap): Bitmap? {
+        return try {
+            // Create a composite image with QR code and invite code text
+            val width = 600
+            val height = 800
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap)
+            
+            // White background
+            canvas.drawColor(android.graphics.Color.WHITE)
+            
+            val paint = android.graphics.Paint().apply {
+                isAntiAlias = true
+                textAlign = android.graphics.Paint.Align.CENTER
+            }
+            
+            var yPos = 60f
+            
+            // Title text
+            paint.textSize = 28f
+            paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            paint.color = android.graphics.Color.BLACK
+            canvas.drawText("Join my family on Routine Chart!", width / 2f, yPos, paint)
+            yPos += 50f
+            
+            // Invite code text
+            paint.textSize = 32f
+            paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD)
+            paint.color = android.graphics.Color.parseColor("#2196F3") // Material Blue
+            canvas.drawText("Invite Code: ${invite.inviteCode}", width / 2f, yPos, paint)
+            yPos += 60f
+            
+            // QR Code (centered, larger)
+            val qrSize = 400
+            val qrX = (width - qrSize) / 2f
+            val qrY = yPos
+            canvas.drawBitmap(
+                Bitmap.createScaledBitmap(qrBitmap, qrSize, qrSize, true),
+                qrX,
+                qrY,
+                null
+            )
+            yPos += qrSize + 40f
+            
+            // Instructions text
+            paint.textSize = 18f
+            paint.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.NORMAL)
+            paint.color = android.graphics.Color.GRAY
+            canvas.drawText("Scan the QR code or use the invite code above", width / 2f, yPos, paint)
+            
+            bitmap
+        } catch (e: Exception) {
+            AppLogger.UI.error("Failed to create shareable image", e)
+            null
+        }
     }
     
     private fun startTimer() {

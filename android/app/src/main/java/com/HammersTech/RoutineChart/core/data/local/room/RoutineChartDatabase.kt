@@ -24,6 +24,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
  * Room database for Routine Chart App
  * Version 1: Initial schema with all core entities
  * Version 2: Added FamilyInviteEntity (Phase 2.2: QR Family Joining)
+ * Version 3: Added inviteCode column to FamilyInviteEntity
  */
 @Database(
     entities = [
@@ -36,7 +37,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
         CompletionEventEntity::class,
         FamilyInviteEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -23,7 +23,8 @@ import java.time.Instant
     ],
     indices = [
         Index(value = ["familyId"]),
-        Index(value = ["token"], unique = true)
+        Index(value = ["token"], unique = true),
+        Index(value = ["inviteCode"], unique = true)
     ]
 )
 data class FamilyInviteEntity(
@@ -31,6 +32,7 @@ data class FamilyInviteEntity(
     val id: String,
     val familyId: String,
     val token: String,
+    val inviteCode: String,
     val createdBy: String,
     val createdAt: Long,
     val expiresAt: Long,
@@ -43,6 +45,7 @@ data class FamilyInviteEntity(
             id = id,
             familyId = familyId,
             token = token,
+            inviteCode = inviteCode,
             createdBy = createdBy,
             createdAt = Instant.ofEpochMilli(createdAt),
             expiresAt = Instant.ofEpochMilli(expiresAt),
@@ -58,6 +61,7 @@ data class FamilyInviteEntity(
                 id = invite.id,
                 familyId = invite.familyId,
                 token = invite.token,
+                inviteCode = invite.inviteCode,
                 createdBy = invite.createdBy,
                 createdAt = invite.createdAt.toEpochMilli(),
                 expiresAt = invite.expiresAt.toEpochMilli(),

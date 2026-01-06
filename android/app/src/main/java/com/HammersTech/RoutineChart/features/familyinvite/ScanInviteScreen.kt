@@ -133,7 +133,7 @@ fun ScanInviteScreen(
 private fun ScanningView(
     context: android.content.Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
-    onCodeScanned: (String) -> Void,
+    onCodeScanned: (String) -> Unit,
     onCancel: () -> Unit
 ) {
     val scanner = remember {

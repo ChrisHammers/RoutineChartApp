@@ -23,6 +23,11 @@ interface FamilyInviteRepository {
     suspend fun getByToken(token: String): FamilyInvite?
     
     /**
+     * Get invite by invite code (e.g., "ABC-1234")
+     */
+    suspend fun getByInviteCode(inviteCode: String): FamilyInvite?
+    
+    /**
      * Get all active invites for a family
      */
     suspend fun getActiveInvites(familyId: String): List<FamilyInvite>

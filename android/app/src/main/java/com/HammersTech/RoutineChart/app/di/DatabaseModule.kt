@@ -32,7 +32,10 @@ object DatabaseModule {
             RoutineChartDatabase::class.java,
             RoutineChartDatabase.DATABASE_NAME
         )
-            .fallbackToDestructiveMigration() // Phase 1: Dev only
+            .addMigrations(
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_2_3
+            )
+            .fallbackToDestructiveMigration() // Phase 1: Dev only - remove in production
             .build()
     }
 

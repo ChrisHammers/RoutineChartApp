@@ -29,6 +29,10 @@ class RoomFamilyInviteRepository @Inject constructor(
         return familyInviteDao.getByToken(token)?.toDomain()
     }
     
+    override suspend fun getByInviteCode(inviteCode: String): FamilyInvite? {
+        return familyInviteDao.getByInviteCode(inviteCode)?.toDomain()
+    }
+    
     override suspend fun getActiveInvites(familyId: String): List<FamilyInvite> {
         return familyInviteDao.getActiveInvitesByFamily(familyId).map { it.toDomain() }
     }

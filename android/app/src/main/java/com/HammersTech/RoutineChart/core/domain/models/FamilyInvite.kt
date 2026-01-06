@@ -11,6 +11,7 @@ data class FamilyInvite(
     val id: String,                // ULID
     val familyId: String,
     val token: String,             // Secure random token
+    val inviteCode: String,        // Human-readable code (e.g., "ABC-1234")
     val createdBy: String,         // userId who created invite
     val createdAt: Instant = Instant.now(),
     val expiresAt: Instant,

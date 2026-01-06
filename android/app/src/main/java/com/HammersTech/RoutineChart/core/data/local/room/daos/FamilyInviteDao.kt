@@ -25,6 +25,9 @@ interface FamilyInviteDao {
     @Query("SELECT * FROM family_invites WHERE token = :token LIMIT 1")
     suspend fun getByToken(token: String): FamilyInviteEntity?
     
+    @Query("SELECT * FROM family_invites WHERE inviteCode = :inviteCode LIMIT 1")
+    suspend fun getByInviteCode(inviteCode: String): FamilyInviteEntity?
+    
     @Query("SELECT * FROM family_invites WHERE familyId = :familyId AND isActive = 1 ORDER BY createdAt DESC")
     suspend fun getActiveInvitesByFamily(familyId: String): List<FamilyInviteEntity>
     
