@@ -160,6 +160,31 @@ final class SQLiteManager {
             AppLogger.database.info("Database schema v1 created")
         }
         
+        // V2: Add family invites table (Phase 2.2: QR joining)
+        migrator.registerMigration("v2") { db in
+            // Family invites table
+            try db.create(table: "family_invites") { t in
+                t.column("id", .text).primaryKey()
+                t.column("familyId", .text).notNull()
+                    .references("families", onDelete: .cascade)
+                t.column("token", .text).notNull().unique()
+                t.column("inviteCode", .text).notNull().unique()
+                t.column("createdBy", .text).notNull()
+                t.column("createdAt", .datetime).notNull()
+                t.column("expiresAt", .datetime).notNull()
+                t.column("maxUses", .integer)
+                t.column("usedCount", .integer).notNull().defaults(to: 0)
+                t.column("isActive", .boolean).notNull().defaults(to: true)
+            }
+            
+            // Indexes for family invites
+            try db.create(index: "idx_family_invites_familyId", on: "family_invites", columns: ["familyId"])
+            try db.create(index: "idx_family_invites_token", on: "family_invites", columns: ["token"])
+            try db.create(index: "idx_family_invites_inviteCode", on: "family_invites", columns: ["inviteCode"])
+            
+            AppLogger.database.info("Database schema v2 created - added family_invites table")
+        }
+        
         return migrator
     }
 }

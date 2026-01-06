@@ -4,6 +4,7 @@ struct ParentDashboardView: View {
     let dependencies: AppDependencies
     @StateObject private var viewModel: ParentDashboardViewModel
     @State private var showingRoutineBuilder = false
+    @State private var showingInviteMember = false
     @State private var selectedRoutine: Routine?
     
     init(dependencies: AppDependencies) {
@@ -45,8 +46,13 @@ struct ParentDashboardView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingRoutineBuilder = true }) {
-                        Image(systemName: "plus")
+                    HStack(spacing: 16) {
+                        Button(action: { showingInviteMember = true }) {
+                            Image(systemName: "person.badge.plus")
+                        }
+                        Button(action: { showingRoutineBuilder = true }) {
+                            Image(systemName: "plus")
+                        }
                     }
                 }
             }
@@ -60,6 +66,9 @@ struct ParentDashboardView: View {
                         Task { await viewModel.loadData() }
                     }
                 )
+            }
+            .sheet(isPresented: $showingInviteMember) {
+                GenerateInviteView(dependencies: dependencies)
             }
             .task {
                 await viewModel.loadData()

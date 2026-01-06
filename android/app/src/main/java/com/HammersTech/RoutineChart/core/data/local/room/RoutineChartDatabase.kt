@@ -10,9 +10,11 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineAssignmentDa
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineStepDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.UserDao
+import com.HammersTech.RoutineChart.core.data.local.room.daos.FamilyInviteDao
 import com.HammersTech.RoutineChart.core.data.local.room.entities.ChildProfileEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.CompletionEventEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.FamilyEntity
+import com.HammersTech.RoutineChart.core.data.local.room.entities.FamilyInviteEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineAssignmentEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineStepEntity
@@ -21,6 +23,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
 /**
  * Room database for Routine Chart App
  * Version 1: Initial schema with all core entities
+ * Version 2: Added FamilyInviteEntity (Phase 2.2: QR Family Joining)
  */
 @Database(
     entities = [
@@ -30,9 +33,10 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
         RoutineEntity::class,
         RoutineStepEntity::class,
         RoutineAssignmentEntity::class,
-        CompletionEventEntity::class
+        CompletionEventEntity::class,
+        FamilyInviteEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -44,6 +48,7 @@ abstract class RoutineChartDatabase : RoomDatabase() {
     abstract fun routineStepDao(): RoutineStepDao
     abstract fun routineAssignmentDao(): RoutineAssignmentDao
     abstract fun completionEventDao(): CompletionEventDao
+    abstract fun familyInviteDao(): FamilyInviteDao
 
     companion object {
         const val DATABASE_NAME = "routine_chart.db"

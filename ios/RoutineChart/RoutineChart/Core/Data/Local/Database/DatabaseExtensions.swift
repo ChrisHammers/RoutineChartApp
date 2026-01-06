@@ -155,3 +155,26 @@ extension CompletionEvent: FetchableRecord, MutablePersistableRecord {
     }
 }
 
+// MARK: - FamilyInvite
+
+extension FamilyInvite: FetchableRecord, MutablePersistableRecord {
+    static let databaseTableName = "family_invites"
+    
+    enum Columns: String, ColumnExpression {
+        case id, familyId, token, inviteCode, createdBy, createdAt, expiresAt, maxUses, usedCount, isActive
+    }
+    
+    func encode(to container: inout PersistenceContainer) {
+        container[Columns.id] = id
+        container[Columns.familyId] = familyId
+        container[Columns.token] = token
+        container[Columns.inviteCode] = inviteCode
+        container[Columns.createdBy] = createdBy
+        container[Columns.createdAt] = createdAt
+        container[Columns.expiresAt] = expiresAt
+        container[Columns.maxUses] = maxUses
+        container[Columns.usedCount] = usedCount
+        container[Columns.isActive] = isActive
+    }
+}
+

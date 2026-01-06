@@ -10,6 +10,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineAssignmentDa
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineStepDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.UserDao
+import com.HammersTech.RoutineChart.core.data.local.room.daos.FamilyInviteDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -68,6 +69,11 @@ object DatabaseModule {
     @Provides
     fun provideCompletionEventDao(database: RoutineChartDatabase): CompletionEventDao {
         return database.completionEventDao()
+    }
+
+    @Provides
+    fun provideFamilyInviteDao(database: RoutineChartDatabase): FamilyInviteDao {
+        return database.familyInviteDao()
     }
 }
 

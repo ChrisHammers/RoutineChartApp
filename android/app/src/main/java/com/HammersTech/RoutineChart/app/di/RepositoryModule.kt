@@ -2,6 +2,7 @@ package com.HammersTech.RoutineChart.app.di
 
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomChildProfileRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomCompletionEventRepository
+import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyInviteRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
@@ -9,6 +10,7 @@ import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStep
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomUserRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.CompletionEventRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
@@ -67,5 +69,11 @@ abstract class RepositoryModule {
     abstract fun bindCompletionEventRepository(
         impl: RoomCompletionEventRepository
     ): CompletionEventRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFamilyInviteRepository(
+        impl: RoomFamilyInviteRepository
+    ): FamilyInviteRepository
 }
 

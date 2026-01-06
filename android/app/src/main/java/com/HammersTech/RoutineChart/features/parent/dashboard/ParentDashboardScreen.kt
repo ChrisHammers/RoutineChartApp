@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.HammersTech.RoutineChart.core.domain.models.Routine
+import com.HammersTech.RoutineChart.features.familyinvite.GenerateInviteScreen
 import com.HammersTech.RoutineChart.features.parent.routinebuilder.RoutineBuilderScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +52,7 @@ fun ParentDashboardScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showRoutineBuilder by remember { mutableStateOf(false) }
+    var showInviteMember by remember { mutableStateOf(false) }
     var editingRoutine by remember { mutableStateOf<Routine?>(null) }
 
     Box(modifier = modifier) {
@@ -58,6 +61,12 @@ fun ParentDashboardScreen(
                 TopAppBar(
                     title = { Text("Routines") },
                     actions = {
+                        IconButton(onClick = { showInviteMember = true }) {
+                            Icon(
+                                imageVector = Icons.Default.PersonAdd,
+                                contentDescription = "Invite Member"
+                            )
+                        }
                         IconButton(onClick = { viewModel.signOut() }) {
                             Icon(
                                 imageVector = Icons.Default.Logout,
@@ -148,6 +157,15 @@ fun ParentDashboardScreen(
                 showRoutineBuilder = false
                 editingRoutine = null
                 viewModel.loadData()
+            }
+        )
+    }
+    
+    // Invite Member Dialog/Sheet
+    if (showInviteMember) {
+        GenerateInviteScreen(
+            onDismiss = {
+                showInviteMember = false
             }
         )
     }

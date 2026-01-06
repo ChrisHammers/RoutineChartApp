@@ -16,11 +16,13 @@ final class AppDependencies: ObservableObject {
     
     // Repositories
     let familyRepo: FamilyRepository
+    let userRepo: UserRepository
     let childRepo: ChildProfileRepository
     let routineRepo: RoutineRepository
     let stepRepo: RoutineStepRepository
     let assignmentRepo: RoutineAssignmentRepository
     let eventRepo: CompletionEventRepository
+    let inviteRepo: FamilyInviteRepository
     
     // Use Cases
     let createRoutine: CreateRoutineUseCase
@@ -38,11 +40,13 @@ final class AppDependencies: ObservableObject {
     // Convenience accessors for ViewModels (full names)
     var authRepository: AuthRepository { authRepo }
     var familyRepository: FamilyRepository { familyRepo }
+    var userRepository: UserRepository { userRepo }
     var childProfileRepository: ChildProfileRepository { childRepo }
     var routineRepository: RoutineRepository { routineRepo }
     var routineStepRepository: RoutineStepRepository { stepRepo }
     var routineAssignmentRepository: RoutineAssignmentRepository { assignmentRepo }
     var completionEventRepository: CompletionEventRepository { eventRepo }
+    var familyInviteRepository: FamilyInviteRepository { inviteRepo }
     var createRoutineUseCase: CreateRoutineUseCase { createRoutine }
     var completeStepUseCase: CompleteStepUseCase { completeStep }
     var undoStepUseCase: UndoStepUseCase { undoStep }
@@ -56,11 +60,13 @@ final class AppDependencies: ObservableObject {
         
         // Initialize repositories
         self.familyRepo = SQLiteFamilyRepository()
+        self.userRepo = SQLiteUserRepository()
         self.childRepo = SQLiteChildProfileRepository()
         self.routineRepo = SQLiteRoutineRepository()
         self.stepRepo = SQLiteRoutineStepRepository()
         self.assignmentRepo = SQLiteRoutineAssignmentRepository()
         self.eventRepo = SQLiteCompletionEventRepository()
+        self.inviteRepo = SQLiteFamilyInviteRepository()
         
         // Initialize use cases
         self.createRoutine = CreateRoutineUseCase(
