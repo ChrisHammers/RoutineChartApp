@@ -48,8 +48,8 @@ struct RoutineChartApp: App {
             try SQLiteManager.shared.setup()
             AppLogger.log("Database initialized")
             
-            // Seed data if needed
-            try await dependencies.seedDataManager.seedIfNeeded()
+            // Seed data if needed - No longer but keeping for potential use
+           // try await dependencies.seedDataManager.seedIfNeeded()
             
             isInitialized = true
         } catch {

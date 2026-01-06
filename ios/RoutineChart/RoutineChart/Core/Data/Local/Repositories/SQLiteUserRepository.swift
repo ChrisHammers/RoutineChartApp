@@ -49,5 +49,26 @@ final class SQLiteUserRepository: UserRepository {
                 .fetchAll(db)
         }
     }
+    
+    func updateFamilyId(userId: String, familyId: String) async throws {
+        let db = try dbManager.database()
+        try await db.write { db in
+            guard var user = try User.fetchOne(db, key: userId) else {
+                throw DatabaseError.recordNotFound
+            }
+            // Create updated user with new familyId
+            let updatedUser = User(
+                id: user.id,
+                familyId: familyId,
+                role: user.role,
+                displayName: user.displayName,
+                email: user.email,
+                createdAt: user.createdAt
+            )
+            var mutableUser = updatedUser
+            try mutableUser.update(db)
+        }
+        AppLogger.database.info("Updated user \(userId) familyId to \(familyId)")
+    }
 }
 

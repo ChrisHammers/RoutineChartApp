@@ -18,16 +18,19 @@ final class ScanInviteViewModel: ObservableObject {
     private let inviteRepository: FamilyInviteRepository
     private let familyRepository: FamilyRepository
     private let userRepository: UserRepository
+    private let authRepository: AuthRepository
     private var cancellables = Set<AnyCancellable>()
     
     init(
         inviteRepository: FamilyInviteRepository,
         familyRepository: FamilyRepository,
-        userRepository: UserRepository
+        userRepository: UserRepository,
+        authRepository: AuthRepository
     ) {
         self.inviteRepository = inviteRepository
         self.familyRepository = familyRepository
         self.userRepository = userRepository
+        self.authRepository = authRepository
     }
     
     func handleScannedCode(_ code: String) {
@@ -77,9 +80,38 @@ final class ScanInviteViewModel: ObservableObject {
                 return false
             }
             
-            // TODO Phase 2.3: Link current auth user to this family
-            // For now, just log success
-            AppLogger.ui.info("Successfully validated invite for family: \(family.name ?? family.id)")
+            // Check if user is authenticated
+            guard let authUser = authRepository.currentUser else {
+                errorMessage = "Please sign in to join a family"
+                return false
+            }
+            
+            // Link user to family
+            // Check if user exists in database
+            if let existingUser = try await userRepository.get(id: authUser.id) {
+                // User exists - update familyId
+                if existingUser.familyId != invite.familyId {
+                    // User is switching families
+                    try await userRepository.updateFamilyId(userId: authUser.id, familyId: invite.familyId)
+                    AppLogger.ui.info("User \(authUser.id) switched to family \(invite.familyId)")
+                } else {
+                    // User already in this family
+                    AppLogger.ui.info("User \(authUser.id) already in family \(invite.familyId)")
+                }
+            } else {
+                // User doesn't exist - create new User record
+                // Default to child role for new users joining via invite
+                let newUser = User(
+                    id: authUser.id,
+                    familyId: invite.familyId,
+                    role: .child,
+                    displayName: authUser.email?.components(separatedBy: "@").first ?? "User",
+                    email: authUser.email,
+                    createdAt: Date()
+                )
+                try await userRepository.create(newUser)
+                AppLogger.ui.info("Created user \(authUser.id) and linked to family \(invite.familyId)")
+            }
             
             // Increment invite used count
             let updatedInvite = FamilyInvite(

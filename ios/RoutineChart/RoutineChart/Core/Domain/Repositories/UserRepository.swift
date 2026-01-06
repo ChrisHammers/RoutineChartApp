@@ -12,5 +12,8 @@ protocol UserRepository {
     func get(id: String) async throws -> User?
     func update(_ user: User) async throws
     func getAll(familyId: String) async throws -> [User]
+    
+    /// Update user's family ID (for joining a family)
+    func updateFamilyId(userId: String, familyId: String) async throws
 }
 

@@ -26,7 +26,8 @@ struct GenerateInviteView: View {
         _viewModel = StateObject(
             wrappedValue: GenerateInviteViewModel(
                 inviteRepository: dependencies.familyInviteRepository,
-                familyRepository: dependencies.familyRepository
+                familyRepository: dependencies.familyRepository,
+                authRepository: dependencies.authRepository
             )
         )
     }

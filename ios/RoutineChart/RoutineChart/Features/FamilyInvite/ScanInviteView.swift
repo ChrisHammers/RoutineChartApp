@@ -20,7 +20,8 @@ struct ScanInviteView: View {
             wrappedValue: ScanInviteViewModel(
                 inviteRepository: dependencies.familyInviteRepository,
                 familyRepository: dependencies.familyRepository,
-                userRepository: dependencies.userRepository
+                userRepository: dependencies.userRepository,
+                authRepository: dependencies.authRepository
             )
         )
     }

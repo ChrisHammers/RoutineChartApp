@@ -21,15 +21,18 @@ final class GenerateInviteViewModel: ObservableObject {
     
     private let inviteRepository: FamilyInviteRepository
     private let familyRepository: FamilyRepository
+    private let authRepository: AuthRepository
     private var timer: Timer?
     private var cancellables = Set<AnyCancellable>()
     
     init(
         inviteRepository: FamilyInviteRepository,
-        familyRepository: FamilyRepository
+        familyRepository: FamilyRepository,
+        authRepository: AuthRepository
     ) {
         self.inviteRepository = inviteRepository
         self.familyRepository = familyRepository
+        self.authRepository = authRepository
     }
     
     deinit {
@@ -79,8 +82,13 @@ final class GenerateInviteViewModel: ObservableObject {
                 return
             }
             
-            // For now, use a placeholder user ID (in Phase 2.3, use actual auth user)
-            let createdBy = "currentUserId" // TODO: Replace with actual auth user ID
+            // Get current authenticated user ID
+            guard let authUser = authRepository.currentUser else {
+                errorMessage = "Please sign in to generate an invite"
+                isLoading = false
+                return
+            }
+            let createdBy = authUser.id
             
             // Create invite
             let token = TokenGenerator.generateSecureToken()

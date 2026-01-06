@@ -10,6 +10,7 @@ import SwiftUI
 struct AuthFlowView: View {
     @EnvironmentObject var dependencies: AppDependencies
     @State private var selectedMode: AuthMode?
+    @State private var showJoinFamily = false
     
     enum AuthMode {
         case parent, child
@@ -122,12 +123,151 @@ struct AuthFlowView: View {
                     .cornerRadius(16)
                 }
                 .buttonStyle(PlainButtonStyle())
+                
+                // Join Family Button
+                Button(action: {
+                    showJoinFamily = true
+                }) {
+                    HStack(spacing: 20) {
+                        Image(systemName: "qrcode.viewfinder")
+                            .font(.system(size: 60))
+                            .foregroundColor(.purple)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Join a Family")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            Text("Scan QR code or enter invite code")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(24)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(16)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 24)
             
             Spacer()
         }
         .background(Color(.systemBackground))
+        .sheet(isPresented: $showJoinFamily) {
+            JoinFamilyOptionsView(dependencies: dependencies)
+        }
+    }
+}
+
+// MARK: - Join Family Options View
+
+struct JoinFamilyOptionsView: View {
+    @Environment(\.dismiss) private var dismiss
+    let dependencies: AppDependencies
+    @State private var showScanQR = false
+    @State private var showEnterCode = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Spacer()
+                
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 80))
+                    .foregroundColor(.accentColor)
+                
+                Text("Join a Family")
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Text("Choose how you'd like to join")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                
+                VStack(spacing: 16) {
+                    // Scan QR Code Button
+                    Button(action: {
+                        showScanQR = true
+                    }) {
+                        HStack(spacing: 16) {
+                            Image(systemName: "qrcode.viewfinder")
+                                .font(.title)
+                                .foregroundColor(.white)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Scan QR Code")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Text("Use your camera to scan")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .padding(20)
+                        .background(Color.accentColor)
+                        .cornerRadius(12)
+                    }
+                    
+                    // Enter Code Button
+                    Button(action: {
+                        showEnterCode = true
+                    }) {
+                        HStack(spacing: 16) {
+                            Image(systemName: "textformat.123")
+                                .font(.title)
+                                .foregroundColor(.white)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Enter Invite Code")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Text("Type the code manually")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .padding(20)
+                        .background(Color.purple)
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Join Family")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+            .sheet(isPresented: $showScanQR) {
+                ScanInviteView(dependencies: dependencies)
+            }
+            .sheet(isPresented: $showEnterCode) {
+                JoinWithCodeView(dependencies: dependencies)
+            }
+        }
     }
 }
 
