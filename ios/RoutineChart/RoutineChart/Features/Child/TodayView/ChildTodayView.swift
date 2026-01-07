@@ -68,6 +68,13 @@ struct ChildTodayView: View {
                 }
             }
             .navigationTitle("Today's Routines")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { viewModel.signOut() }) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                    }
+                }
+            }
             .task {
                 await viewModel.loadData()
             }

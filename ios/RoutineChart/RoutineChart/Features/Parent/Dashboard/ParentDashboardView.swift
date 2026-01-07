@@ -47,15 +47,18 @@ struct ParentDashboardView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button(action: { showingSettings = true }) {
-                            Image(systemName: "gearshape")
-                        }
-                        Button(action: { showingInviteMember = true }) {
-                            Image(systemName: "person.badge.plus")
-                        }
-                        Button(action: { showingRoutineBuilder = true }) {
-                            Image(systemName: "plus")
+                    // Only show if user is parent
+                    if let user = dependencies.currentUser, user.role == .parent {
+                        HStack(spacing: 16) {
+                            Button(action: { showingSettings = true }) {
+                                Image(systemName: "gearshape")
+                            }
+                            Button(action: { showingInviteMember = true }) {
+                                Image(systemName: "person.badge.plus")
+                            }
+                            Button(action: { showingRoutineBuilder = true }) {
+                                Image(systemName: "plus")
+                            }
                         }
                     }
                 }
@@ -83,11 +86,12 @@ struct ParentDashboardView: View {
         }
     }
     
+    @ViewBuilder
     private var routinesList: some View {
-        Group {
-            if viewModel.routines.isEmpty {
-                emptyState
-            } else {
+        if viewModel.routines.isEmpty {
+            emptyState
+        } else {
+            if let user = dependencies.currentUser, user.role == .parent {
                 List {
                     ForEach(viewModel.routines) { routine in
                         RoutineRow(routine: routine)
@@ -98,6 +102,13 @@ struct ParentDashboardView: View {
                             }
                     }
                     .onDelete(perform: deleteRoutines)
+                }
+            } else {
+                List {
+                    ForEach(viewModel.routines) { routine in
+                        RoutineRow(routine: routine)
+                            .contentShape(Rectangle())
+                    }
                 }
             }
         }
@@ -117,11 +128,13 @@ struct ParentDashboardView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
             
-            Button(action: { showingRoutineBuilder = true }) {
-                Label("Create Routine", systemImage: "plus.circle.fill")
-                    .font(.headline)
+            if let user = dependencies.currentUser, user.role == .parent {
+                Button(action: { showingRoutineBuilder = true }) {
+                    Label("Create Routine", systemImage: "plus.circle.fill")
+                        .font(.headline)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
     }

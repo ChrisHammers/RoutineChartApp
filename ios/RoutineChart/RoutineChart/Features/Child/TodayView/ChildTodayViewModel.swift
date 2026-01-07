@@ -7,7 +7,6 @@
 
 import Foundation
 import Combine
-import GRDB
 import OSLog
 
 @MainActor
@@ -26,6 +25,8 @@ final class ChildTodayViewModel: ObservableObject {
     private let completeStep: CompleteStepUseCase
     private let undoStep: UndoStepUseCase
     private let deriveStepCompletion: DeriveStepCompletionUseCase
+    private let authRepository: AuthRepository
+    private let userRepository: UserRepository
     
     private var familyId: String?
     private let today: String
@@ -39,6 +40,8 @@ final class ChildTodayViewModel: ObservableObject {
         self.completeStep = dependencies.completeStep
         self.undoStep = dependencies.undoStep
         self.deriveStepCompletion = dependencies.deriveStepCompletion
+        self.authRepository = dependencies.authRepository
+        self.userRepository = dependencies.userRepository
         self.today = Date().localDayKey()
     }
     
@@ -47,16 +50,22 @@ final class ChildTodayViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            // Get family (Phase 1: using first family)
-            let families = try await childRepo.getAll(familyId: "") // Hack: get all
-            guard let family = try await getFirstFamily() else {
-                error = "No family found"
+            // Get current authenticated user
+            guard let authUser = authRepository.currentUser else {
+                error = "Not signed in"
                 return
             }
-            familyId = family.id
             
-            // Load children
-            children = try await childRepo.getAll(familyId: family.id)
+            // Get user record to find their familyId
+            guard let user = try await userRepository.get(id: authUser.id) else {
+                error = "User not found. Please join a family first."
+                return
+            }
+            
+            familyId = user.familyId
+            
+            // Load children for THIS user's family
+            children = try await childRepo.getAll(familyId: user.familyId)
             
             // Auto-select first child
             if selectedChild == nil, let first = children.first {
@@ -138,11 +147,13 @@ final class ChildTodayViewModel: ObservableObject {
         }
     }
     
-    private func getFirstFamily() async throws -> Family? {
-        // Phase 1 hack: get first family from database
-        let db = try SQLiteManager.shared.database()
-        return try await db.read { db in
-            try Family.fetchOne(db)
+    func signOut() {
+        do {
+            try authRepository.signOut()
+            AppLogger.ui.info("User signed out")
+        } catch {
+            AppLogger.ui.error("Error signing out: \(error.localizedDescription)")
+            self.error = "Failed to sign out"
         }
     }
 }

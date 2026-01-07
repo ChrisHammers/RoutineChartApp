@@ -16,17 +16,20 @@ struct SettingsView: View {
         NavigationView {
             List {
                 Section("Family") {
-                    Button(action: {
-                        showJoinFamily = true
-                    }) {
-                        HStack {
-                            Image(systemName: "person.2.fill")
-                                .foregroundColor(.accentColor)
-                            Text("Join a Family")
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
-                                .font(.caption)
+                    // Only show "Join a Family" if user is child
+                    if let user = dependencies.currentUser, user.role == .child {
+                        Button(action: {
+                            showJoinFamily = true
+                        }) {
+                            HStack {
+                                Image(systemName: "person.2.fill")
+                                    .foregroundColor(.accentColor)
+                                Text("Join a Family")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.secondary)
+                                    .font(.caption)
+                            }
                         }
                     }
                 }

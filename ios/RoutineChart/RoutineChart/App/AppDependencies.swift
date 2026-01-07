@@ -7,12 +7,14 @@
 
 import Foundation
 import Combine
+import OSLog
 
 @MainActor
 final class AppDependencies: ObservableObject {
     // Auth
     let authRepo: AuthRepository
     @Published var currentAuthUser: AuthUser?
+    @Published var currentUser: User?
     
     // Repositories
     let familyRepo: FamilyRepository
@@ -103,7 +105,62 @@ final class AppDependencies: ObservableObject {
         // Subscribe to auth state changes
         authRepo.authStatePublisher
             .receive(on: DispatchQueue.main)
-            .assign(to: &$currentAuthUser)
+            .sink { [weak self] authUser in
+                self?.currentAuthUser = authUser
+                Task { @MainActor in
+                    await self?.loadCurrentUser()
+                }
+            }
+            .store(in: &cancellables)
+    }
+    
+    func loadCurrentUser() async {
+        guard let authUser = currentAuthUser else {
+            currentUser = nil
+            return
+        }
+        
+        do {
+            // Try to load existing user
+            if let user = try await userRepo.get(id: authUser.id) {
+                currentUser = user
+                return
+            }
+            
+            // No User record exists - create one
+            // If anonymous, don't create (they join via invite)
+            // If non-anonymous (email/password), assume parent and create family + user
+            if authUser.isAnonymous {
+                // Anonymous users join families via invite, so don't create User record yet
+                currentUser = nil
+                return
+            }
+            
+            // Non-anonymous user (parent) - create Family and User record
+            let family = Family(
+                name: nil,
+                timeZone: TimeZone.current.identifier,
+                weekStartsOn: 0,
+                planTier: .free
+            )
+            try await familyRepo.create(family)
+            
+            let newUser = User(
+                id: authUser.id,
+                familyId: family.id,
+                role: .parent,
+                displayName: authUser.email?.components(separatedBy: "@").first ?? "Parent",
+                email: authUser.email,
+                createdAt: Date()
+            )
+            try await userRepo.create(newUser)
+            currentUser = newUser
+            
+            AppLogger.database.info("Created family and user for parent: \(authUser.id)")
+        } catch {
+            AppLogger.error("Failed to load/create current user: \(error.localizedDescription)")
+            currentUser = nil
+        }
     }
 }
 
