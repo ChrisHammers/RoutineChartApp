@@ -80,8 +80,20 @@ final class ScanInviteViewModel: ObservableObject {
                 return false
             }
             
-            // Check if user is authenticated
-            guard let authUser = authRepository.currentUser else {
+            // Check if user is authenticated, if not, sign in anonymously
+            var authUser = authRepository.currentUser
+            if authUser == nil {
+                // User is not authenticated - sign in anonymously first
+                do {
+                    authUser = try await authRepository.signInAnonymously()
+                    AppLogger.ui.info("Signed in anonymously for join family flow (QR)")
+                } catch {
+                    errorMessage = "Failed to sign in: \(error.localizedDescription)"
+                    return false
+                }
+            }
+            
+            guard let authUser = authUser else {
                 errorMessage = "Please sign in to join a family"
                 return false
             }

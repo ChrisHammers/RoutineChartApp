@@ -62,13 +62,15 @@ final class AppDependencies: ObservableObject {
         
         // Initialize repositories
         self.familyRepo = SQLiteFamilyRepository()
-        self.userRepo = SQLiteUserRepository()
+        // Use composite repository for users (SQLite + Firestore sync)
+        self.userRepo = CompositeUserRepository()
         self.childRepo = SQLiteChildProfileRepository()
         self.routineRepo = SQLiteRoutineRepository()
         self.stepRepo = SQLiteRoutineStepRepository()
         self.assignmentRepo = SQLiteRoutineAssignmentRepository()
         self.eventRepo = SQLiteCompletionEventRepository()
-        self.inviteRepo = SQLiteFamilyInviteRepository()
+        // Use composite repository for invites (SQLite + Firestore sync)
+        self.inviteRepo = CompositeFamilyInviteRepository()
         
         // Initialize use cases
         self.createRoutine = CreateRoutineUseCase(

@@ -16,6 +16,9 @@ final class ChildTodayViewModel: ObservableObject {
     @Published var routines: [RoutineWithSteps] = []
     @Published var isLoading = false
     @Published var error: String?
+    @Published var showSettings = false
+    
+    let dependencies: AppDependencies
     
     private let childRepo: ChildProfileRepository
     private let routineRepo: RoutineRepository
@@ -32,6 +35,7 @@ final class ChildTodayViewModel: ObservableObject {
     private let today: String
     
     init(dependencies: AppDependencies) {
+        self.dependencies = dependencies
         self.childRepo = dependencies.childRepo
         self.routineRepo = dependencies.routineRepo
         self.stepRepo = dependencies.stepRepo

@@ -69,11 +69,19 @@ struct ChildTodayView: View {
             }
             .navigationTitle("Today's Routines")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { viewModel.showSettings = true }) {
+                        Image(systemName: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { viewModel.signOut() }) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                     }
                 }
+            }
+            .sheet(isPresented: $viewModel.showSettings) {
+                SettingsView(dependencies: viewModel.dependencies)
             }
             .task {
                 await viewModel.loadData()
