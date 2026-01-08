@@ -77,10 +77,20 @@ struct GenerateInviteView: View {
                                     }
                                     .transition(.opacity.combined(with: .scale))
                                 } else {
-                                    Text("Tap code to copy • Share with others")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .transition(.opacity)
+                                    VStack(spacing: 4) {
+                                        Text("Tap code to copy • Share with others")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        
+                                        // Real-time usage count
+                                        if invite.usedCount > 0 {
+                                            Text("\(invite.usedCount) \(invite.usedCount == 1 ? "person has" : "people have") joined")
+                                                .font(.caption)
+                                                .foregroundColor(.green)
+                                                .fontWeight(.medium)
+                                        }
+                                    }
+                                    .transition(.opacity)
                                 }
                             }
                             

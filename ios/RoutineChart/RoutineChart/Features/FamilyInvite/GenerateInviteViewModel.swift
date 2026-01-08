@@ -24,6 +24,7 @@ final class GenerateInviteViewModel: ObservableObject {
     private let authRepository: AuthRepository
     private var timer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private var inviteListener: FirestoreInviteListener?
     
     init(
         inviteRepository: FamilyInviteRepository,
@@ -37,6 +38,8 @@ final class GenerateInviteViewModel: ObservableObject {
     
     deinit {
         timer?.invalidate()
+        // Note: inviteListener will clean itself up via its own deinit
+        // We can't call stopRealTimeListener() here because deinit is not @MainActor isolated
     }
     
     func loadActiveInvite() async {
@@ -59,6 +62,7 @@ final class GenerateInviteViewModel: ObservableObject {
                 self.invite = validInvite
                 self.qrCodeImage = QRCodeGenerator.generate(for: validInvite)
                 startTimer()
+                startRealTimeListener(for: validInvite)
                 AppLogger.ui.info("Loaded existing active invite: \(validInvite.id)")
             }
         } catch {
@@ -112,6 +116,9 @@ final class GenerateInviteViewModel: ObservableObject {
             // Start timer to update time remaining
             startTimer()
             
+            // Start real-time listener for updates
+            startRealTimeListener(for: newInvite)
+            
             AppLogger.ui.info("Generated family invite: \(newInvite.id)")
         } catch {
             errorMessage = "Failed to generate invite: \(error.localizedDescription)"
@@ -126,6 +133,7 @@ final class GenerateInviteViewModel: ObservableObject {
         
         do {
             try await inviteRepository.deactivate(id: invite.id)
+            stopRealTimeListener()
             self.invite = nil
             self.qrCodeImage = nil
             timer?.invalidate()
@@ -223,6 +231,10 @@ final class GenerateInviteViewModel: ObservableObject {
         if remaining <= 0 {
             timeRemaining = "Expired"
             timer?.invalidate()
+            // Auto-dismiss expired invites
+            stopRealTimeListener()
+            self.invite = nil
+            self.qrCodeImage = nil
             return
         }
         
@@ -237,6 +249,55 @@ final class GenerateInviteViewModel: ObservableObject {
         } else {
             timeRemaining = String(format: "Expires in %ds", seconds)
         }
+    }
+    
+    // MARK: - Real-time Updates
+    
+    private func startRealTimeListener(for invite: FamilyInvite) {
+        // Stop any existing listener
+        stopRealTimeListener()
+        
+        // Create new listener
+        let listener = FirestoreInviteListener()
+        self.inviteListener = listener
+        
+        // Subscribe to updates
+        listener.invitePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] updatedInvite in
+                guard let self = self else { return }
+                
+                if let updatedInvite = updatedInvite {
+                    // Update the invite with real-time data
+                    self.invite = updatedInvite
+                    
+                    // If invite is no longer valid (expired, deactivated, max uses), clear it
+                    if !updatedInvite.isValid {
+                        AppLogger.ui.info("Invite \(updatedInvite.id) is no longer valid - clearing")
+                        self.stopRealTimeListener()
+                        self.invite = nil
+                        self.qrCodeImage = nil
+                        self.timer?.invalidate()
+                    }
+                } else {
+                    // Invite was deleted or doesn't exist
+                    AppLogger.ui.info("Invite was deleted or doesn't exist - clearing")
+                    self.stopRealTimeListener()
+                    self.invite = nil
+                    self.qrCodeImage = nil
+                    self.timer?.invalidate()
+                }
+            }
+            .store(in: &cancellables)
+        
+        // Start listening
+        listener.startListening(inviteId: invite.id, familyId: invite.familyId)
+        AppLogger.ui.info("Started real-time listener for invite: \(invite.id)")
+    }
+    
+    private func stopRealTimeListener() {
+        inviteListener?.stopListening()
+        inviteListener = nil
     }
 }
 

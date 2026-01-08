@@ -125,9 +125,9 @@ struct User {
 - [ ] Handle offline/online scenarios
 
 ### Phase 2.3.5: Real-time Updates
-- [ ] Listen to Firestore invite updates
-- [ ] Auto-dismiss expired invites in UI
-- [ ] Show real-time invite usage count
+- [x] Listen to Firestore invite updates
+- [x] Auto-dismiss expired invites in UI
+- [x] Show real-time invite usage count
 
 ---
 
