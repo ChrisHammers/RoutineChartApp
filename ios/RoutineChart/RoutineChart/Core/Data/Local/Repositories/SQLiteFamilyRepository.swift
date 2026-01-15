@@ -47,5 +47,31 @@ final class SQLiteFamilyRepository: FamilyRepository {
             try Family.fetchAll(db)
         }
     }
+    
+    func delete(id: String) async throws {
+        let db = try dbManager.database()
+        try await db.write { db in
+            try db.execute(sql: "DELETE FROM families WHERE id = ?", arguments: [id])
+        }
+        AppLogger.database.info("Deleted family: \(id)")
+    }
+    
+    func deleteAllExcept(familyIds: Set<String>) async throws {
+        let db = try dbManager.database()
+        try await db.write { db in
+            let allFamilies = try Family.fetchAll(db)
+            var deletedCount = 0
+            for family in allFamilies {
+                if !familyIds.contains(family.id) {
+                    try db.execute(sql: "DELETE FROM families WHERE id = ?", arguments: [family.id])
+                    deletedCount += 1
+                    AppLogger.database.info("Deleted orphaned family: \(family.id)")
+                }
+            }
+            if deletedCount > 0 {
+                AppLogger.database.info("🧹 Cleaned up \(deletedCount) orphaned families")
+            }
+        }
+    }
 }
 

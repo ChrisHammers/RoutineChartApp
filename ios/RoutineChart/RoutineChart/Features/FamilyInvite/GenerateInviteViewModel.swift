@@ -21,6 +21,7 @@ final class GenerateInviteViewModel: ObservableObject {
     
     private let inviteRepository: FamilyInviteRepository
     private let familyRepository: FamilyRepository
+    private let userRepository: UserRepository
     private let authRepository: AuthRepository
     private var timer: Timer?
     private var cancellables = Set<AnyCancellable>()
@@ -29,10 +30,12 @@ final class GenerateInviteViewModel: ObservableObject {
     init(
         inviteRepository: FamilyInviteRepository,
         familyRepository: FamilyRepository,
+        userRepository: UserRepository,
         authRepository: AuthRepository
     ) {
         self.inviteRepository = inviteRepository
         self.familyRepository = familyRepository
+        self.userRepository = userRepository
         self.authRepository = authRepository
     }
     
@@ -48,17 +51,26 @@ final class GenerateInviteViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Get the current family
-            guard let family = try await familyRepository.getAll().first else {
+            // Get the current user's familyId (source of truth)
+            guard let authUser = authRepository.currentUser else {
                 isLoading = false
                 return
             }
             
+            guard let user = try await userRepository.get(id: authUser.id) else {
+                AppLogger.ui.error("No user record found for authenticated user: \(authUser.id)")
+                isLoading = false
+                return
+            }
+            
+            let familyId = user.familyId
+            AppLogger.ui.info("Loading invites for user's family: \(familyId)")
+            
             // Sync invites from Firestore first (to get invites created on other devices)
             if let compositeRepo = inviteRepository as? CompositeFamilyInviteRepository {
                 do {
-                    try await compositeRepo.syncFromFirestore(familyId: family.id)
-                    AppLogger.ui.info("Synced invites from Firestore")
+                    try await compositeRepo.syncFromFirestore(familyId: familyId)
+                    AppLogger.ui.info("Synced invites from Firestore for family: \(familyId)")
                 } catch {
                     // Log but don't fail - we can still use local data
                     AppLogger.ui.error("Failed to sync invites from Firestore: \(error.localizedDescription)")
@@ -66,7 +78,7 @@ final class GenerateInviteViewModel: ObservableObject {
             }
             
             // Get all active invites for this family (now includes synced invites)
-            let activeInvites = try await inviteRepository.getActiveInvites(familyId: family.id)
+            let activeInvites = try await inviteRepository.getActiveInvites(familyId: familyId)
             
             // Find the first valid (not expired, not max uses) invite
             if let validInvite = activeInvites.first(where: { $0.isValid }) {
@@ -90,19 +102,22 @@ final class GenerateInviteViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Get the current family
-            guard let family = try await familyRepository.getAll().first else {
-                errorMessage = "No family found. Please create a family first."
-                isLoading = false
-                return
-            }
-            
-            // Get current authenticated user ID
+            // Get the current user's familyId (source of truth)
             guard let authUser = authRepository.currentUser else {
                 errorMessage = "Please sign in to generate an invite"
                 isLoading = false
                 return
             }
+            
+            guard let user = try await userRepository.get(id: authUser.id) else {
+                errorMessage = "No user record found. Please sign in again."
+                isLoading = false
+                return
+            }
+            
+            let familyId = user.familyId
+            AppLogger.ui.info("Generating invite for user's family: \(familyId)")
+            
             let createdBy = authUser.id
             
             // Create invite
@@ -111,7 +126,7 @@ final class GenerateInviteViewModel: ObservableObject {
             let expiresAt = Calendar.current.date(byAdding: .hour, value: 24, to: Date()) ?? Date().addingTimeInterval(86400)
             
             let newInvite = FamilyInvite(
-                familyId: family.id,
+                familyId: familyId,
                 token: token,
                 inviteCode: inviteCode,
                 createdBy: createdBy,

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 import OSLog
 
 /// Composite repository that uses SQLite as source of truth and syncs to Firestore
@@ -71,21 +72,93 @@ final class CompositeFamilyRepository: FamilyRepository {
     /// Used for initial sync or when going online
     func syncFromFirestore(familyId: String) async throws {
         do {
-            if let firestoreFamily = try await syncService.syncFromFirestore(familyId: familyId) {
-                // Check if family exists locally
-                if let localFamily = try await localRepo.get(id: familyId) {
-                    // Use the more recent data (by updatedAt)
-                    // For now, prefer Firestore data (assume it's more authoritative)
-                    try await localRepo.update(firestoreFamily)
-                } else {
-                    // New family from Firestore, add to local
-                    try await localRepo.create(firestoreFamily)
+            AppLogger.database.info("🔄 Syncing family from Firestore: \(familyId)")
+            
+            // Log all local families before sync
+            let allLocalFamilies = try await localRepo.getAll()
+            AppLogger.database.info("📋 Local families before sync: \(allLocalFamilies.count)")
+            for family in allLocalFamilies {
+                AppLogger.database.info("   - Local Family ID: \(family.id), name: \(family.name ?? "nil")")
+            }
+            
+            guard let firestoreFamily = try await syncService.syncFromFirestore(familyId: familyId) else {
+                AppLogger.database.error("❌ Family not found in Firestore: \(familyId)")
+                
+                // Try to list all families in Firestore to see what's available
+                AppLogger.database.info("🔍 Attempting to list all families in Firestore...")
+                do {
+                    let db = Firestore.firestore()
+                    let snapshot = try await db.collection("families").getDocuments(source: .server)
+                    AppLogger.database.info("📋 Found \(snapshot.documents.count) families in Firestore:")
+                    for doc in snapshot.documents {
+                        AppLogger.database.info("   - Firestore Family ID: \(doc.documentID), exists: \(doc.exists), data keys: \(doc.data().keys.joined(separator: ", "))")
+                    }
+                    
+                    if snapshot.documents.isEmpty {
+                        AppLogger.database.warning("⚠️ No families found in Firestore. This could indicate:")
+                        AppLogger.database.warning("   1. Security rules are blocking read access")
+                        AppLogger.database.warning("   2. Wrong Firestore database/project")
+                        AppLogger.database.warning("   3. Collection name mismatch")
+                        AppLogger.database.warning("   4. Network/permission error")
+                    }
+                } catch let error as NSError {
+                    AppLogger.database.error("❌ Failed to list Firestore families: \(error.localizedDescription)")
+                    AppLogger.database.error("   Error domain: \(error.domain), code: \(error.code)")
+                    AppLogger.database.error("   UserInfo: \(error.userInfo)")
+                    
+                    // Check if it's a permission error
+                    if error.domain == "FIRFirestoreErrorDomain" {
+                        if error.code == 7 { // Permission denied
+                            AppLogger.database.error("🚫 PERMISSION DENIED: Firestore security rules are blocking read access to 'families' collection")
+                        }
+                    }
+                } catch {
+                    AppLogger.database.error("❌ Failed to list Firestore families: \(error.localizedDescription)")
                 }
                 
-                AppLogger.database.info("Synced family from Firestore: \(familyId)")
+                throw NSError(domain: "CompositeFamilyRepository", code: 1, userInfo: [NSLocalizedDescriptionKey: "Family \(familyId) not found in Firestore"])
+            }
+            
+            AppLogger.database.info("✅ Successfully fetched Family from Firestore: \(firestoreFamily.id), name: \(firestoreFamily.name ?? "nil")")
+            
+            // Check if family exists locally
+            if let localFamily = try await localRepo.get(id: familyId) {
+                // Use the more recent data (by updatedAt)
+                // For now, prefer Firestore data (assume it's more authoritative)
+                AppLogger.database.info("🔄 Updating existing family from Firestore: \(familyId)")
+                try await localRepo.update(firestoreFamily)
+                
+                // Verify update succeeded
+                if let updatedFamily = try await localRepo.get(id: familyId) {
+                    AppLogger.database.info("✅ Verified family updated: \(familyId)")
+                } else {
+                    AppLogger.database.error("❌ Family update failed - family not found after update: \(familyId)")
+                    throw NSError(domain: "CompositeFamilyRepository", code: 2, userInfo: [NSLocalizedDescriptionKey: "Family update failed - family not found after update"])
+                }
+            } else {
+                // New family from Firestore, add to local
+                AppLogger.database.info("🔄 Creating new family from Firestore: \(familyId)")
+                try await localRepo.create(firestoreFamily)
+                
+                // Verify create succeeded
+                if let createdFamily = try await localRepo.get(id: familyId) {
+                    AppLogger.database.info("✅ Verified family created: \(familyId)")
+                } else {
+                    AppLogger.database.error("❌ Family create failed - family not found after create: \(familyId)")
+                    throw NSError(domain: "CompositeFamilyRepository", code: 3, userInfo: [NSLocalizedDescriptionKey: "Family create failed - family not found after create"])
+                }
+            }
+            
+            AppLogger.database.info("✅ Synced family from Firestore: \(familyId)")
+            
+            // Log all local families after sync
+            let allLocalFamiliesAfter = try await localRepo.getAll()
+            AppLogger.database.info("📋 Local families after sync: \(allLocalFamiliesAfter.count)")
+            for family in allLocalFamiliesAfter {
+                AppLogger.database.info("   - Local Family ID: \(family.id), name: \(family.name ?? "nil")")
             }
         } catch {
-            AppLogger.database.error("Failed to sync family from Firestore: \(error.localizedDescription)")
+            AppLogger.database.error("❌ Failed to sync family from Firestore: \(familyId) - \(error.localizedDescription)")
             throw error
         }
     }

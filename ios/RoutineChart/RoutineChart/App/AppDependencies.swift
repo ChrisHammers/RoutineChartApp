@@ -64,7 +64,8 @@ final class AppDependencies: ObservableObject {
         // Use composite repository for families (SQLite + Firestore sync)
         self.familyRepo = CompositeFamilyRepository()
         // Use composite repository for users (SQLite + Firestore sync)
-        self.userRepo = CompositeUserRepository()
+        // Pass familyRepo so User sync can ensure Family exists before updating User (foreign key constraint)
+        self.userRepo = CompositeUserRepository(familyRepo: self.familyRepo)
         self.childRepo = SQLiteChildProfileRepository()
         self.routineRepo = SQLiteRoutineRepository()
         self.stepRepo = SQLiteRoutineStepRepository()
@@ -124,8 +125,36 @@ final class AppDependencies: ObservableObject {
         }
         
         do {
-            // Try to load existing user
-            if let user = try await userRepo.get(id: authUser.id) {
+            // For non-anonymous users, sync from Firestore first (source of truth)
+            // This ensures local User has the correct familyId and Family exists locally
+            var existingUser: User? = nil
+            
+            if !authUser.isAnonymous {
+                // Sync from Firestore to update local User with correct familyId
+                if let compositeRepo = userRepo as? CompositeUserRepository {
+                    do {
+                        try await compositeRepo.syncFromFirestore(userId: authUser.id)
+                        // Reload from local after sync (local was updated with Firestore data)
+                        existingUser = try await userRepo.get(id: authUser.id)
+                        if let user = existingUser {
+                            AppLogger.database.info("✅ Synced user from Firestore: \(authUser.id), familyId: \(user.familyId)")
+                        }
+                    } catch {
+                        // If Firestore sync fails, fall back to local
+                        AppLogger.database.warning("⚠️ Failed to sync user from Firestore, using local: \(error.localizedDescription)")
+                        existingUser = try await userRepo.get(id: authUser.id)
+                    }
+                } else {
+                    // Fallback to local if not using composite repo
+                    existingUser = try await userRepo.get(id: authUser.id)
+                }
+            } else {
+                // For anonymous users, check local only (they join via invite)
+                existingUser = try await userRepo.get(id: authUser.id)
+            }
+            
+            // If we have a user, use it
+            if let user = existingUser {
                 currentUser = user
                 return
             }

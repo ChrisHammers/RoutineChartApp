@@ -38,14 +38,45 @@ final class FirestoreFamilySyncService {
     
     /// Sync family from Firestore
     func syncFromFirestore(familyId: String) async throws -> Family? {
-        let document = try await familyDocument(familyId: familyId).getDocument()
+        let docRef = familyDocument(familyId: familyId)
+        AppLogger.database.info("🔍 Fetching Family from Firestore: \(docRef.path)")
         
-        guard document.exists,
-              let data = document.data() else {
+        do {
+            let document = try await docRef.getDocument(source: .server)
+            
+            if !document.exists {
+                AppLogger.database.error("❌ Family document does not exist at path: \(docRef.path)")
+                AppLogger.database.error("   Attempted to fetch: families/\(familyId)")
+                return nil
+            }
+        
+        guard let data = document.data() else {
+            AppLogger.database.error("❌ Family document exists but has no data at path: \(docRef.path)")
             return nil
         }
         
-        return try parseFamily(from: data, id: document.documentID)
+            AppLogger.database.info("✅ Found Family document in Firestore: \(familyId), data keys: \(data.keys.joined(separator: ", "))")
+            
+            do {
+                return try parseFamily(from: data, id: document.documentID)
+            } catch {
+                AppLogger.database.error("❌ Failed to parse Family data: \(error.localizedDescription), data: \(data)")
+                throw error
+            }
+        } catch let error as NSError {
+            AppLogger.database.error("❌ Error fetching Family from Firestore: \(error.localizedDescription)")
+            AppLogger.database.error("   Error domain: \(error.domain), code: \(error.code)")
+            AppLogger.database.error("   UserInfo: \(error.userInfo)")
+            
+            // Check if it's a permission error
+            if error.domain == "FIRFirestoreErrorDomain" {
+                if error.code == 7 { // Permission denied
+                    AppLogger.database.error("🚫 PERMISSION DENIED: Firestore security rules are blocking read access to 'families' collection")
+                    AppLogger.database.error("   Please check your Firestore security rules for the 'families' collection")
+                }
+            }
+            throw error
+        }
     }
     
     /// Parse Firestore document data into Family

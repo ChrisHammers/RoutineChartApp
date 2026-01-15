@@ -27,6 +27,7 @@ struct GenerateInviteView: View {
             wrappedValue: GenerateInviteViewModel(
                 inviteRepository: dependencies.familyInviteRepository,
                 familyRepository: dependencies.familyRepository,
+                userRepository: dependencies.userRepository,
                 authRepository: dependencies.authRepository
             )
         )
