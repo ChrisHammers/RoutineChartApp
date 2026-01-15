@@ -8,6 +8,7 @@ import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyRepository
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import com.HammersTech.RoutineChart.core.utils.InviteCodeGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -89,14 +90,38 @@ class JoinWithCodeViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Get the family (verify it exists)
-                val family = familyRepository.getById(invite.familyId)
+                // Get the family - check locally first, then sync from Firestore if needed
+                var family = familyRepository.getById(invite.familyId)
                 if (family == null) {
-                    _state.value = _state.value.copy(
-                        isJoining = false,
-                        errorMessage = "Family not found"
-                    )
-                    return@launch
+                    // Family doesn't exist locally - try to sync from Firestore
+                    AppLogger.UI.info("Family ${invite.familyId} not found locally, syncing from Firestore...")
+                    if (familyRepository is CompositeFamilyRepository) {
+                        try {
+                            familyRepository.syncFromFirestore(invite.familyId)
+                            family = familyRepository.getById(invite.familyId)
+                            if (family == null) {
+                                _state.value = _state.value.copy(
+                                    isJoining = false,
+                                    errorMessage = "Family not found. The invite may be invalid."
+                                )
+                                return@launch
+                            }
+                            AppLogger.UI.info("Successfully synced family ${invite.familyId} from Firestore")
+                        } catch (e: Exception) {
+                            AppLogger.UI.error("Failed to sync family from Firestore", e)
+                            _state.value = _state.value.copy(
+                                isJoining = false,
+                                errorMessage = "Family not found. The invite may be invalid."
+                            )
+                            return@launch
+                        }
+                    } else {
+                        _state.value = _state.value.copy(
+                            isJoining = false,
+                            errorMessage = "Family not found"
+                        )
+                        return@launch
+                    }
                 }
                 
                 // Check if user is authenticated, if not, sign in anonymously
@@ -177,4 +202,3 @@ class JoinWithCodeViewModel @Inject constructor(
         _state.value = UiState()
     }
 }
-
