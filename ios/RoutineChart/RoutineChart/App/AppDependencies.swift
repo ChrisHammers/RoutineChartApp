@@ -1,6 +1,5 @@
 //
 //  AppDependencies.swift
-//  RoutineChart
 //
 //  Dependency injection container
 //
@@ -124,39 +123,60 @@ final class AppDependencies: ObservableObject {
             return
         }
         
+        // Safeguard: If user is already loaded and matches auth user, skip reload
+        if let existingUser = currentUser, existingUser.id == authUser.id {
+            AppLogger.database.info("✅ User already loaded: \(authUser.id), skipping reload")
+            return
+        }
+        
         do {
-            // For non-anonymous users, sync from Firestore first (source of truth)
-            // This ensures local User has the correct familyId and Family exists locally
-            var existingUser: User? = nil
+            // CRITICAL: Check local User FIRST to prevent duplicate Family creation
+            // Only sync from Firestore if User exists locally (to update with Firestore data)
+            var existingUser: User? = try await userRepo.get(id: authUser.id)
             
+            if let localUser = existingUser {
+                // User exists locally - sync from Firestore to update with latest data
+                if !authUser.isAnonymous {
+                    if let compositeRepo = userRepo as? CompositeUserRepository {
+                        do {
+                            try await compositeRepo.syncFromFirestore(userId: authUser.id)
+                            // Reload from local after sync (local was updated with Firestore data)
+                            existingUser = try await userRepo.get(id: authUser.id)
+                            if let user = existingUser {
+                                AppLogger.database.info("✅ Synced user from Firestore: \(authUser.id), familyId: \(user.familyId)")
+                            }
+                        } catch {
+                            // If Firestore sync fails, use local user
+                            AppLogger.database.warning("⚠️ Failed to sync user from Firestore, using local: \(error.localizedDescription)")
+                            existingUser = localUser
+                        }
+                    }
+                }
+                
+                // Use the user (either synced or local)
+                currentUser = existingUser
+                return
+            }
+            
+            // No User record exists locally - check Firestore for non-anonymous users
             if !authUser.isAnonymous {
-                // Sync from Firestore to update local User with correct familyId
+                // For non-anonymous users, try to sync from Firestore first
+                // This handles the case where User exists in Firestore but not locally
                 if let compositeRepo = userRepo as? CompositeUserRepository {
                     do {
                         try await compositeRepo.syncFromFirestore(userId: authUser.id)
-                        // Reload from local after sync (local was updated with Firestore data)
+                        // Reload from local after sync
                         existingUser = try await userRepo.get(id: authUser.id)
                         if let user = existingUser {
                             AppLogger.database.info("✅ Synced user from Firestore: \(authUser.id), familyId: \(user.familyId)")
+                            currentUser = user
+                            return
                         }
                     } catch {
-                        // If Firestore sync fails, fall back to local
-                        AppLogger.database.warning("⚠️ Failed to sync user from Firestore, using local: \(error.localizedDescription)")
-                        existingUser = try await userRepo.get(id: authUser.id)
+                        // User doesn't exist in Firestore - will create new one below
+                        AppLogger.database.info("ℹ️ User not found in Firestore, will create new: \(authUser.id)")
                     }
-                } else {
-                    // Fallback to local if not using composite repo
-                    existingUser = try await userRepo.get(id: authUser.id)
                 }
-            } else {
-                // For anonymous users, check local only (they join via invite)
-                existingUser = try await userRepo.get(id: authUser.id)
-            }
-            
-            // If we have a user, use it
-            if let user = existingUser {
-                currentUser = user
-                return
             }
             
             // No User record exists - create one
@@ -169,6 +189,16 @@ final class AppDependencies: ObservableObject {
             }
             
             // Non-anonymous user (parent) - create Family and User record
+            // CRITICAL: Double-check that User doesn't exist (race condition protection)
+            existingUser = try await userRepo.get(id: authUser.id)
+            if let user = existingUser {
+                // User was created by another concurrent call - use it
+                AppLogger.database.info("✅ User was created by concurrent call, using existing: \(authUser.id)")
+                currentUser = user
+                return
+            }
+            
+            // User definitely doesn't exist - create Family and User
             let family = Family(
                 id: ULIDGenerator.generate(),
                 name: nil,
@@ -177,6 +207,15 @@ final class AppDependencies: ObservableObject {
                 planTier: .free
             )
             try await familyRepo.create(family)
+            
+            // CRITICAL: Check one more time before creating User (race condition protection)
+            existingUser = try await userRepo.get(id: authUser.id)
+            if let user = existingUser {
+                // User was created by another concurrent call after we created Family
+                AppLogger.database.warning("⚠️ User was created by concurrent call after Family creation, using existing: \(authUser.id)")
+                currentUser = user
+                return
+            }
             
             let newUser = User(
                 id: authUser.id,
@@ -189,11 +228,10 @@ final class AppDependencies: ObservableObject {
             try await userRepo.create(newUser)
             currentUser = newUser
             
-            AppLogger.database.info("Created family and user for parent: \(authUser.id)")
+            AppLogger.database.info("✅ Created family and user for parent: \(authUser.id), familyId: \(family.id)")
         } catch {
             AppLogger.error("Failed to load/create current user: \(error.localizedDescription)")
             currentUser = nil
         }
     }
 }
-

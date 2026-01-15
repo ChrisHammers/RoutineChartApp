@@ -7,16 +7,11 @@ import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyRepos
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStepRepository
-import com.HammersTech.RoutineChart.core.data.local.repositories.RoomUserRepository
-import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.CompletionEventRepository
-import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
-import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineStepRepository
-import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -30,12 +25,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
     // FamilyRepository is provided by FirebaseModule (CompositeFamilyRepository)
-
-    @Binds
-    @Singleton
-    abstract fun bindUserRepository(
-        impl: RoomUserRepository
-    ): UserRepository
+    // UserRepository is provided by FirebaseModule (CompositeUserRepository)
+    // FamilyInviteRepository is provided by FirebaseModule (CompositeFamilyInviteRepository)
 
     @Binds
     @Singleton
@@ -66,7 +57,4 @@ abstract class RepositoryModule {
     abstract fun bindCompletionEventRepository(
         impl: RoomCompletionEventRepository
     ): CompletionEventRepository
-
-    // FamilyInviteRepository is provided by FirebaseModule (CompositeFamilyInviteRepository)
 }
-

@@ -14,11 +14,9 @@ struct ContentView: View {
         Group {
             if dependencies.currentAuthUser != nil {
                 // User is authenticated - show main app
+                // Note: loadCurrentUser() is automatically called by auth state publisher
+                // No need to call it here to avoid duplicate calls
                 mainContent
-                    .task {
-                        // Load current user when authenticated
-                        await dependencies.loadCurrentUser()
-                    }
             } else {
                 // User is not authenticated - show auth flow
                 AuthFlowView()
