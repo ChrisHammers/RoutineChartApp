@@ -28,6 +28,7 @@ import javax.inject.Inject
 class GenerateInviteViewModel @Inject constructor(
     private val inviteRepository: FamilyInviteRepository,
     private val familyRepository: FamilyRepository,
+    private val userRepository: com.HammersTech.RoutineChart.core.domain.repositories.UserRepository,
     private val authRepository: com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 ) : ViewModel() {
     
@@ -54,8 +55,21 @@ class GenerateInviteViewModel @Inject constructor(
             )
             
             try {
+                // Get current authenticated user
+                val authUser = authRepository.currentUser
+                    ?: throw IllegalStateException("Not authenticated")
+                
+                // Get current user's familyId (source of truth)
+                val currentUser = userRepository.getById(authUser.id)
+                if (currentUser == null) {
+                    _state.value = _state.value.copy(isLoading = false)
+                    return@launch
+                }
+                
+                val currentFamilyId = currentUser.familyId
+                
                 // Get the current family
-                val family = familyRepository.getAll().firstOrNull()
+                val family = familyRepository.getById(currentFamilyId)
                 if (family == null) {
                     _state.value = _state.value.copy(isLoading = false)
                     return@launch
@@ -65,8 +79,8 @@ class GenerateInviteViewModel @Inject constructor(
                 if (inviteRepository is com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyInviteRepository) {
                     try {
                         (inviteRepository as com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyInviteRepository)
-                            .syncFromFirestore(family.id)
-                        AppLogger.UI.info("Synced invites from Firestore")
+                            .syncFromFirestore(currentFamilyId)
+                        AppLogger.UI.info("Synced invites from Firestore for family: $currentFamilyId")
                     } catch (e: Exception) {
                         // Log but don't fail - we can still use local data
                         AppLogger.UI.error("Failed to sync invites from Firestore: ${e.message}", e)
@@ -74,7 +88,7 @@ class GenerateInviteViewModel @Inject constructor(
                 }
                 
                 // Get all active invites for this family (now includes synced invites)
-                val activeInvites = inviteRepository.getActiveInvites(family.id)
+                val activeInvites = inviteRepository.getActiveInvites(currentFamilyId)
                 
                 // Find the first valid (not expired, not max uses) invite
                 val validInvite = activeInvites.firstOrNull { it.isValid }
@@ -111,8 +125,24 @@ class GenerateInviteViewModel @Inject constructor(
             )
             
             try {
+                // Get current authenticated user
+                val authUser = authRepository.currentUser
+                    ?: throw IllegalStateException("Not authenticated")
+                
+                // Get current user's familyId (source of truth)
+                val currentUser = userRepository.getById(authUser.id)
+                if (currentUser == null) {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        errorMessage = "User not found. Please sign in again."
+                    )
+                    return@launch
+                }
+                
+                val currentFamilyId = currentUser.familyId
+                
                 // Get the current family
-                val family = familyRepository.getAll().firstOrNull()
+                val family = familyRepository.getById(currentFamilyId)
                 if (family == null) {
                     _state.value = _state.value.copy(
                         isLoading = false,
@@ -121,9 +151,7 @@ class GenerateInviteViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Get current authenticated user ID
-                val authUser = authRepository.currentUser
-                    ?: throw IllegalStateException("Please sign in to generate an invite")
+                // Use the authUser we already got above
                 val createdBy = authUser.id
                 
                 // Create invite

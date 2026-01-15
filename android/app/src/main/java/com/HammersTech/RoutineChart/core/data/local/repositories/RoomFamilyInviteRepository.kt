@@ -49,5 +49,9 @@ class RoomFamilyInviteRepository @Inject constructor(
         val now = Instant.now().toEpochMilli()
         familyInviteDao.deleteExpired(now)
     }
+    
+    suspend fun deleteInvitesFromOtherFamilies(keepFamilyId: String) {
+        familyInviteDao.deleteInvitesFromOtherFamilies(keepFamilyId)
+    }
 }
 

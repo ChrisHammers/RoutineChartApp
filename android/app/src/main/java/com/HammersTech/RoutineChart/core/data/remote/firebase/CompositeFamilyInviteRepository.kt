@@ -102,10 +102,16 @@ class CompositeFamilyInviteRepository @Inject constructor(
     /**
      * Sync invites from Firestore to local database
      * Used for initial sync or when going online
+     * CRITICAL: Also deletes invites from other families to prevent showing stale data
      */
     suspend fun syncFromFirestore(familyId: String) {
         try {
             val firestoreInvites = syncService.syncFromFirestore(familyId)
+            
+            // CRITICAL: Delete invites from other families to prevent showing stale data
+            // When a user joins a new family, we should only show invites for their current family
+            localRepo.deleteInvitesFromOtherFamilies(familyId)
+            AppLogger.Database.info("Cleaned up invites from other families, keeping: $familyId")
             
             // Merge Firestore data into local database
             for (invite in firestoreInvites) {

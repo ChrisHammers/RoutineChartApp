@@ -36,5 +36,8 @@ interface FamilyInviteDao {
     
     @Query("DELETE FROM family_invites WHERE expiresAt < :now")
     suspend fun deleteExpired(now: Long)
+    
+    @Query("DELETE FROM family_invites WHERE familyId != :keepFamilyId")
+    suspend fun deleteInvitesFromOtherFamilies(keepFamilyId: String)
 }
 
