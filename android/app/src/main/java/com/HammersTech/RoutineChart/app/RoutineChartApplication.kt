@@ -2,6 +2,8 @@ package com.HammersTech.RoutineChart.app
 
 import android.app.Application
 import com.google.firebase.FirebaseApp  // Phase 2.1: Enabled for Firebase Auth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.HammersTech.RoutineChart.BuildConfig
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import dagger.hilt.android.HiltAndroidApp
@@ -25,6 +27,15 @@ class RoutineChartApplication : Application() {
             FirebaseApp.initializeApp(this)
             AppLogger.UI.info("Firebase initialized")
             
+            // Configure Firestore settings for better network connectivity
+            val firestore = FirebaseFirestore.getInstance()
+            val settings = FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(true)  // Enable offline persistence
+                .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
+                .build()
+            firestore.firestoreSettings = settings
+            AppLogger.UI.info("Firestore configured with persistence enabled")
+            
             AppLogger.UI.info("RoutineChartApplication initialized successfully")
         } catch (e: Exception) {
             android.util.Log.e("RoutineChartApp", "Failed to initialize application", e)
@@ -32,4 +43,3 @@ class RoutineChartApplication : Application() {
         }
     }
 }
-

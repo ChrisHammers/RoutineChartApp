@@ -1,6 +1,7 @@
 package com.HammersTech.RoutineChart.core.data.remote.firebase
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.HammersTech.RoutineChart.core.domain.models.FamilyInvite
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import kotlinx.coroutines.tasks.await
@@ -61,11 +62,16 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
     
     /**
      * Fetches all invites for a given family from Firestore.
+     * Uses Source.SERVER to force network request and bypass cache.
      */
     suspend fun syncFromFirestore(familyId: String): List<FamilyInvite> {
         return try {
-            val snapshot = collectionPath(familyId).get().await()
-            snapshot.documents.mapNotNull { document ->
+            AppLogger.Database.info("Fetching invites from Firestore (server) for family: $familyId")
+            val snapshot = collectionPath(familyId)
+                .get(Source.SERVER)  // Force server read to bypass cache
+                .await()
+            
+            val invites = snapshot.documents.mapNotNull { document ->
                 try {
                     parseInvite(document.data ?: emptyMap(), document.id)
                 } catch (e: Exception) {
@@ -73,8 +79,22 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
                     null
                 }
             }
+            AppLogger.Database.info("Successfully fetched ${invites.size} invites from Firestore for family: $familyId")
+            invites
         } catch (e: Exception) {
-            AppLogger.Database.error("Failed to sync invites from Firestore", e)
+            AppLogger.Database.error("Failed to sync invites from Firestore for family: $familyId", e)
+            // Log specific error details
+            when {
+                e.message?.contains("network", ignoreCase = true) == true -> {
+                    AppLogger.Database.error("Network error detected. Check internet connection and Firebase configuration.")
+                }
+                e.message?.contains("permission", ignoreCase = true) == true -> {
+                    AppLogger.Database.error("Permission denied. Check Firestore security rules.")
+                }
+                else -> {
+                    AppLogger.Database.error("Unknown error: ${e.message}")
+                }
+            }
             throw e
         }
     }
@@ -118,5 +138,3 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
         )
     }
 }
-
-

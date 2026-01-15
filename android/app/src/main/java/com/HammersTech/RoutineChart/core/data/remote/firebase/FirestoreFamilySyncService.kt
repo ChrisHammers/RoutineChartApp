@@ -1,6 +1,7 @@
 package com.HammersTech.RoutineChart.core.data.remote.firebase
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.HammersTech.RoutineChart.core.domain.models.Family
 import com.HammersTech.RoutineChart.core.domain.models.PlanTier
 import com.HammersTech.RoutineChart.core.utils.AppLogger
@@ -57,19 +58,38 @@ class FirestoreFamilySyncService @Inject constructor() {
     
     /**
      * Fetches a family from Firestore by ID.
+     * Uses Source.SERVER to force network request and bypass cache.
      */
     suspend fun syncFromFirestore(familyId: String): Family? {
         return try {
-            val document = familyDocument(familyId).get().await()
+            AppLogger.Database.info("Fetching family from Firestore (server): $familyId")
+            val document = familyDocument(familyId)
+                .get(Source.SERVER)  // Force server read to bypass cache
+                .await()
             
             if (!document.exists()) {
+                AppLogger.Database.error("Family document does not exist: $familyId")
                 return null
             }
             
             val data = document.data ?: return null
-            parseFamily(data, document.id)
+            val family = parseFamily(data, document.id)
+            AppLogger.Database.info("Successfully fetched family from Firestore: $familyId")
+            family
         } catch (e: Exception) {
-            AppLogger.Database.error("Failed to sync family from Firestore", e)
+            AppLogger.Database.error("Failed to sync family from Firestore: $familyId", e)
+            // Log specific error details
+            when {
+                e.message?.contains("network", ignoreCase = true) == true -> {
+                    AppLogger.Database.error("Network error detected. Check internet connection and Firebase configuration.")
+                }
+                e.message?.contains("permission", ignoreCase = true) == true -> {
+                    AppLogger.Database.error("Permission denied. Check Firestore security rules.")
+                }
+                else -> {
+                    AppLogger.Database.error("Unknown error: ${e.message}")
+                }
+            }
             throw e
         }
     }
