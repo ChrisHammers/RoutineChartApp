@@ -24,10 +24,15 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.HammersTech.RoutineChart.app.ui.theme.RoutineChartTheme
+import com.HammersTech.RoutineChart.core.domain.models.Family
+import com.HammersTech.RoutineChart.core.domain.models.PlanTier
 import com.HammersTech.RoutineChart.core.domain.models.Role
 import com.HammersTech.RoutineChart.core.domain.models.User
 import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
+import com.HammersTech.RoutineChart.core.utils.AppLogger
+import com.HammersTech.RoutineChart.core.utils.ULIDGenerator
 import com.HammersTech.RoutineChart.features.auth.AuthFlowScreen
 import com.HammersTech.RoutineChart.features.child.today.ChildTodayScreen
 import com.HammersTech.RoutineChart.features.parent.dashboard.ParentDashboardScreen
@@ -38,6 +43,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.util.TimeZone
 import javax.inject.Inject
 
 /**
@@ -66,11 +74,13 @@ class MainActivity : ComponentActivity() {
 /**
  * ViewModel for MainActivity to observe auth state and current user
  * Phase 2.1: Firebase Auth
+ * Phase 2.3: Auto-create Family and User for non-anonymous parents
  */
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val familyRepository: FamilyRepository
 ) : ViewModel() {
     val authState: StateFlow<com.HammersTech.RoutineChart.core.domain.models.AuthUser?> = 
         authRepository.authStateFlow.stateIn(
@@ -93,6 +103,49 @@ class MainViewModel @Inject constructor(
     
     init {
         android.util.Log.d("MainViewModel", "Auth state initialized. Current user: ${authRepository.currentUser}")
+        
+        // Auto-create Family and User for non-anonymous parents when they sign in
+        viewModelScope.launch {
+            authState.collect { authUser ->
+                if (authUser != null && !authUser.isAnonymous) {
+                    // Non-anonymous user (parent) - check if User record exists
+                    val existingUser = userRepository.getById(authUser.id)
+                    if (existingUser == null) {
+                        // No User record exists - create Family and User
+                        try {
+                            val timeZone = TimeZone.getDefault().id
+                            val family = Family(
+                                id = ULIDGenerator.generate(),
+                                name = null,
+                                timeZone = timeZone,
+                                weekStartsOn = 0, // Sunday
+                                planTier = PlanTier.FREE,
+                                createdAt = Instant.now(),
+                                updatedAt = Instant.now()
+                            )
+                            familyRepository.create(family)
+                            
+                            val displayName = authUser.email?.substringBefore("@") ?: "Parent"
+                            val newUser = User(
+                                id = authUser.id,
+                                familyId = family.id,
+                                role = Role.PARENT,
+                                displayName = displayName,
+                                email = authUser.email,
+                                createdAt = Instant.now()
+                            )
+                            userRepository.create(newUser)
+                            
+                            AppLogger.Database.info("Created family and user for parent: ${authUser.id}")
+                            android.util.Log.d("MainViewModel", "Auto-created family ${family.id} and user ${newUser.id} for parent")
+                        } catch (e: Exception) {
+                            AppLogger.Database.error("Failed to create family and user for parent", e)
+                            android.util.Log.e("MainViewModel", "Failed to create family and user", e)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
