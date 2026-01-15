@@ -42,5 +42,14 @@ class RoomUserRepository @Inject constructor(
             list.map { it.toDomain() }
         }
     }
+
+    override suspend fun updateFamilyId(userId: String, familyId: String) {
+        val user = userDao.getById(userId)
+            ?: throw IllegalStateException("User not found: $userId")
+        
+        val updatedUser = user.copy(familyId = familyId)
+        userDao.update(updatedUser)
+        AppLogger.Database.info("Updated user $userId familyId to $familyId")
+    }
 }
 

@@ -38,7 +38,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
         FamilyInviteEntity::class
     ],
     version = 3,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class RoutineChartDatabase : RoomDatabase() {

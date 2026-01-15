@@ -70,10 +70,6 @@ abstract class RepositoryModule {
         impl: RoomCompletionEventRepository
     ): CompletionEventRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindFamilyInviteRepository(
-        impl: RoomFamilyInviteRepository
-    ): FamilyInviteRepository
+    // FamilyInviteRepository is provided by FirebaseModule (CompositeFamilyInviteRepository)
 }
 

@@ -13,5 +13,11 @@ interface UserRepository {
     fun observeById(id: String): Flow<User?>
     suspend fun getByFamilyId(familyId: String): List<User>
     fun observeByFamilyId(familyId: String): Flow<List<User>>
+    
+    /**
+     * Update user's family ID (for joining a family)
+     * Phase 2.3.1: User Linking
+     */
+    suspend fun updateFamilyId(userId: String, familyId: String)
 }
 

@@ -6,6 +6,7 @@ import com.HammersTech.RoutineChart.core.data.local.SeedDataManager
 import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Routine
 import com.HammersTech.RoutineChart.core.domain.models.RoutineStep
+import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
@@ -41,7 +42,8 @@ class ChildTodayViewModel @Inject constructor(
     private val undoStepUseCase: UndoStepUseCase,
     private val deriveStepCompletionUseCase: DeriveStepCompletionUseCase,
     private val deriveRoutineCompletionUseCase: DeriveRoutineCompletionUseCase,
-    private val deviceIdentifier: DeviceIdentifier
+    private val deviceIdentifier: DeviceIdentifier,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChildTodayState())
@@ -205,6 +207,18 @@ class ChildTodayViewModel @Inject constructor(
                 loadRoutinesForChild(child.id, family.id, family.timeZone)
             } catch (e: Exception) {
                 AppLogger.UI.error("Error toggling step", e)
+            }
+        }
+    }
+
+    fun signOut() {
+        viewModelScope.launch {
+            try {
+                authRepository.signOut()
+                AppLogger.UI.info("User signed out")
+            } catch (e: Exception) {
+                AppLogger.UI.error("Error signing out: ${e.message}", e)
+                _state.update { it.copy(error = "Failed to sign out") }
             }
         }
     }

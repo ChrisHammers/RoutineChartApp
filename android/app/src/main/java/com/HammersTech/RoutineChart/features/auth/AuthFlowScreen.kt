@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,6 +37,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.HammersTech.RoutineChart.features.auth.child.ChildSignInScreen
 import com.HammersTech.RoutineChart.features.auth.parent.ParentSignInScreen
+import com.HammersTech.RoutineChart.features.familyinvite.JoinFamilyOptionsScreen
+import com.HammersTech.RoutineChart.features.familyinvite.JoinWithCodeScreen
+import com.HammersTech.RoutineChart.features.familyinvite.ScanInviteScreen
 
 /**
  * Auth flow coordinator screen
@@ -69,6 +73,9 @@ fun AuthFlowScreen() {
 private fun AuthModeSelectionScreen(
     onModeSelected: (AuthMode) -> Unit
 ) {
+    var showJoinFamilyOptions by rememberSaveable { mutableStateOf(false) }
+    var showScanQR by rememberSaveable { mutableStateOf(false) }
+    var showEnterCode by rememberSaveable { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -191,7 +198,84 @@ private fun AuthModeSelectionScreen(
             }
         }
         
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Join Family Card
+        Card(
+            onClick = { showJoinFamilyOptions = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = null,
+                    modifier = Modifier.size(60.dp),
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+                
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "Join a Family",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "Scan QR code or enter invite code",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        
         Spacer(modifier = Modifier.weight(1f))
+    }
+    
+    // Join Family Options Dialog
+    if (showJoinFamilyOptions) {
+        JoinFamilyOptionsScreen(
+            onDismiss = { showJoinFamilyOptions = false },
+            onScanQR = {
+                showJoinFamilyOptions = false
+                showScanQR = true
+            },
+            onEnterCode = {
+                showJoinFamilyOptions = false
+                showEnterCode = true
+            }
+        )
+    }
+    
+    // Scan QR Screen
+    if (showScanQR) {
+        ScanInviteScreen(
+            onDismiss = { showScanQR = false },
+            onJoinSuccess = { showScanQR = false }
+        )
+    }
+    
+    // Enter Code Screen
+    if (showEnterCode) {
+        JoinWithCodeScreen(
+            onDismiss = { showEnterCode = false },
+            onJoinSuccess = { showEnterCode = false }
+        )
     }
 }
 

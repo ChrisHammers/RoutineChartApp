@@ -2,7 +2,6 @@ package com.HammersTech.RoutineChart.features.familyinvite
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.HammersTech.RoutineChart.core.domain.models.FamilyInvite
 import com.HammersTech.RoutineChart.core.domain.models.Role
 import com.HammersTech.RoutineChart.core.domain.models.User
 import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
@@ -10,111 +9,73 @@ import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteReposit
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import com.HammersTech.RoutineChart.core.utils.AppLogger
-import java.time.Instant
+import com.HammersTech.RoutineChart.core.utils.InviteCodeGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
 
 /**
- * ViewModel for scanning and joining via family invites
- * Phase 2.2: QR Family Joining
+ * ViewModel for joining a family with a manual invite code
+ * Phase 2.2: QR Family Joining (Manual Code Entry)
  */
 @HiltViewModel
-class ScanInviteViewModel @Inject constructor(
+class JoinWithCodeViewModel @Inject constructor(
     private val inviteRepository: FamilyInviteRepository,
     private val familyRepository: FamilyRepository,
     private val userRepository: UserRepository,
-    private val authRepository: com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     
     data class UiState(
-        val isScanning: Boolean = false,
-        val scannedInvite: ScannedInvite? = null,
-        val showConfirmation: Boolean = false,
+        val inviteCode: String = "",
         val errorMessage: String? = null,
         val isJoining: Boolean = false,
         val joinSuccess: Boolean = false
     )
     
-    data class ScannedInvite(
-        val familyId: String,
-        val token: String,
-        val expires: Instant
-    )
-    
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
     
-    fun startScanning() {
+    val isCodeValid: Boolean
+        get() = InviteCodeGenerator.normalizeInviteCode(_state.value.inviteCode) != null
+    
+    fun onInviteCodeChange(code: String) {
         _state.value = _state.value.copy(
-            isScanning = true,
+            inviteCode = code,
             errorMessage = null
         )
     }
     
-    fun stopScanning() {
-        _state.value = _state.value.copy(isScanning = false)
-    }
-    
-    fun handleScannedCode(code: String) {
-        val parsed = FamilyInvite.fromURL(code)
-        
-        if (parsed == null) {
-            _state.value = _state.value.copy(
-                isScanning = false,
-                errorMessage = "Invalid QR code. Please scan a valid family invite."
-            )
-            return
-        }
-        
-        // Check if expired
-        if (Instant.now().isAfter(parsed.third)) {
-            _state.value = _state.value.copy(
-                isScanning = false,
-                errorMessage = "This invite has expired. Please ask for a new one."
-            )
-            return
-        }
-        
-        _state.value = _state.value.copy(
-            isScanning = false,
-            scannedInvite = ScannedInvite(
-                familyId = parsed.first,
-                token = parsed.second,
-                expires = parsed.third
-            ),
-            showConfirmation = true
-        )
-    }
-    
-    fun cancelJoin() {
-        _state.value = _state.value.copy(
-            showConfirmation = false,
-            scannedInvite = null
-        )
-    }
-    
-    fun joinFamily() {
-        val scannedInvite = _state.value.scannedInvite ?: return
-        
+    fun joinWithCode() {
         viewModelScope.launch {
+            val normalizedCode = InviteCodeGenerator.normalizeInviteCode(_state.value.inviteCode)
+            
+            if (normalizedCode == null) {
+                _state.value = _state.value.copy(
+                    errorMessage = "Invalid code format. Use XXX-YYYY (e.g., ABC-1234)"
+                )
+                return@launch
+            }
+            
             _state.value = _state.value.copy(isJoining = true, errorMessage = null)
             
             try {
-                // Validate invite exists and is valid
-                val invite = inviteRepository.getByToken(scannedInvite.token)
+                // Find invite by code
+                val invite = inviteRepository.getByInviteCode(normalizedCode)
                 
                 if (invite == null) {
                     _state.value = _state.value.copy(
                         isJoining = false,
-                        errorMessage = "Invalid invite token"
+                        errorMessage = "Invite code not found. Please check the code and try again."
                     )
                     return@launch
                 }
                 
+                // Validate invite
                 if (!invite.isValid) {
                     val message = when {
                         invite.isExpired -> "This invite has expired"
@@ -128,7 +89,7 @@ class ScanInviteViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Get the family
+                // Get the family (verify it exists)
                 val family = familyRepository.getById(invite.familyId)
                 if (family == null) {
                     _state.value = _state.value.copy(
@@ -145,7 +106,7 @@ class ScanInviteViewModel @Inject constructor(
                     authRepository.signInAnonymously().fold(
                         onSuccess = { user ->
                             authUser = user
-                            AppLogger.UI.info("Signed in anonymously for join family flow (QR)")
+                            AppLogger.UI.info("Signed in anonymously for join family flow")
                         },
                         onFailure = { error ->
                             _state.value = _state.value.copy(
@@ -203,7 +164,7 @@ class ScanInviteViewModel @Inject constructor(
                     joinSuccess = true
                 )
             } catch (e: Exception) {
-                AppLogger.UI.error("Failed to join family", e)
+                AppLogger.UI.error("Failed to join family with code", e)
                 _state.value = _state.value.copy(
                     isJoining = false,
                     errorMessage = "Failed to join family: ${e.message}"

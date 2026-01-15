@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.HammersTech.RoutineChart.core.domain.models.Routine
 import com.HammersTech.RoutineChart.features.familyinvite.GenerateInviteScreen
 import com.HammersTech.RoutineChart.features.parent.routinebuilder.RoutineBuilderScreen
+import com.HammersTech.RoutineChart.features.settings.SettingsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +55,7 @@ fun ParentDashboardScreen(
     val state by viewModel.state.collectAsState()
     var showRoutineBuilder by remember { mutableStateOf(false) }
     var showInviteMember by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
     var editingRoutine by remember { mutableStateOf<Routine?>(null) }
 
     Box(modifier = modifier) {
@@ -61,6 +64,12 @@ fun ParentDashboardScreen(
                 TopAppBar(
                     title = { Text("Routines") },
                     actions = {
+                        IconButton(onClick = { showSettings = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings"
+                            )
+                        }
                         IconButton(onClick = { showInviteMember = true }) {
                             Icon(
                                 imageVector = Icons.Default.PersonAdd,
@@ -166,6 +175,15 @@ fun ParentDashboardScreen(
         GenerateInviteScreen(
             onDismiss = {
                 showInviteMember = false
+            }
+        )
+    }
+    
+    // Settings Dialog/Sheet
+    if (showSettings) {
+        SettingsScreen(
+            onDismiss = {
+                showSettings = false
             }
         )
     }

@@ -27,7 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class GenerateInviteViewModel @Inject constructor(
     private val inviteRepository: FamilyInviteRepository,
-    private val familyRepository: FamilyRepository
+    private val familyRepository: FamilyRepository,
+    private val authRepository: com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 ) : ViewModel() {
     
     data class UiState(
@@ -108,8 +109,10 @@ class GenerateInviteViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // For now, use a placeholder user ID (in Phase 2.3, use actual auth user)
-                val createdBy = "currentUserId" // TODO: Replace with actual auth user ID
+                // Get current authenticated user ID
+                val authUser = authRepository.currentUser
+                    ?: throw IllegalStateException("Please sign in to generate an invite")
+                val createdBy = authUser.id
                 
                 // Create invite
                 val token = TokenGenerator.generateSecureToken()
