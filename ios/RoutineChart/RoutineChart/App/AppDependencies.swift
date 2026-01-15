@@ -61,7 +61,8 @@ final class AppDependencies: ObservableObject {
         self.currentAuthUser = authRepo.currentUser
         
         // Initialize repositories
-        self.familyRepo = SQLiteFamilyRepository()
+        // Use composite repository for families (SQLite + Firestore sync)
+        self.familyRepo = CompositeFamilyRepository()
         // Use composite repository for users (SQLite + Firestore sync)
         self.userRepo = CompositeUserRepository()
         self.childRepo = SQLiteChildProfileRepository()
@@ -140,6 +141,7 @@ final class AppDependencies: ObservableObject {
             
             // Non-anonymous user (parent) - create Family and User record
             let family = Family(
+                id: ULIDGenerator.generate(),
                 name: nil,
                 timeZone: TimeZone.current.identifier,
                 weekStartsOn: 0,

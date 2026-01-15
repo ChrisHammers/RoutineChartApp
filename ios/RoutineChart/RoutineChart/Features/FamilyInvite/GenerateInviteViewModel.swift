@@ -54,7 +54,18 @@ final class GenerateInviteViewModel: ObservableObject {
                 return
             }
             
-            // Get all active invites for this family
+            // Sync invites from Firestore first (to get invites created on other devices)
+            if let compositeRepo = inviteRepository as? CompositeFamilyInviteRepository {
+                do {
+                    try await compositeRepo.syncFromFirestore(familyId: family.id)
+                    AppLogger.ui.info("Synced invites from Firestore")
+                } catch {
+                    // Log but don't fail - we can still use local data
+                    AppLogger.ui.error("Failed to sync invites from Firestore: \(error.localizedDescription)")
+                }
+            }
+            
+            // Get all active invites for this family (now includes synced invites)
             let activeInvites = try await inviteRepository.getActiveInvites(familyId: family.id)
             
             // Find the first valid (not expired, not max uses) invite

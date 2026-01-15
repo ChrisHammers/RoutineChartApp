@@ -8,6 +8,7 @@ import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssi
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStepRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomUserRepository
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.CompletionEventRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
@@ -28,11 +29,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-    @Binds
-    @Singleton
-    abstract fun bindFamilyRepository(
-        impl: RoomFamilyRepository
-    ): FamilyRepository
+    // FamilyRepository is provided by FirebaseModule (CompositeFamilyRepository)
 
     @Binds
     @Singleton

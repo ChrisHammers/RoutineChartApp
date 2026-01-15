@@ -61,7 +61,19 @@ class GenerateInviteViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Get all active invites for this family
+                // Sync invites from Firestore first (to get invites created on other devices)
+                if (inviteRepository is com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyInviteRepository) {
+                    try {
+                        (inviteRepository as com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyInviteRepository)
+                            .syncFromFirestore(family.id)
+                        AppLogger.UI.info("Synced invites from Firestore")
+                    } catch (e: Exception) {
+                        // Log but don't fail - we can still use local data
+                        AppLogger.UI.error("Failed to sync invites from Firestore: ${e.message}", e)
+                    }
+                }
+                
+                // Get all active invites for this family (now includes synced invites)
                 val activeInvites = inviteRepository.getActiveInvites(family.id)
                 
                 // Find the first valid (not expired, not max uses) invite

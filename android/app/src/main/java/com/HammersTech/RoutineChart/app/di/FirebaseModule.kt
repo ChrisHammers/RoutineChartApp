@@ -1,7 +1,9 @@
 package com.HammersTech.RoutineChart.app.di
 
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyInviteRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyInviteRepository
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeFamilyRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -15,6 +17,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class FirebaseModule {
+    
+    @Binds
+    @Singleton
+    abstract fun bindFamilyRepository(
+        impl: CompositeFamilyRepository
+    ): FamilyRepository
     
     @Binds
     @Singleton
