@@ -18,20 +18,19 @@ struct SettingsView: View {
         NavigationView {
             List {
                 Section("Family") {
-                    // Only show "Join a Family" if user is child
-                    if let user = dependencies.currentUser, user.role == .child {
-                        Button(action: {
-                            showJoinFamily = true
-                        }) {
-                            HStack {
-                                Image(systemName: "person.2.fill")
-                                    .foregroundColor(.accentColor)
-                                Text("Join a Family")
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .foregroundColor(.secondary)
-                                    .font(.caption)
-                            }
+                    // Show "Join a Family" for both children and parents
+                    // Parents can join other families (e.g., co-parenting scenarios)
+                    Button(action: {
+                        showJoinFamily = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.2.fill")
+                                .foregroundColor(.accentColor)
+                            Text("Join a Family")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
                         }
                     }
                 }

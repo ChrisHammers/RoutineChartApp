@@ -80,30 +80,29 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.primary
             )
             
-            // Join a Family (only for children)
-            if (state.currentUser?.role == Role.CHILD) {
-                ListItem(
-                    headlineContent = { Text("Join a Family") },
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.Default.PersonAdd,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    trailingContent = {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showJoinFamilyOptions = true }
-                )
-                Divider()
-            }
+            // Join a Family (available for both children and parents)
+            // Parents can join other families (e.g., co-parenting scenarios)
+            ListItem(
+                headlineContent = { Text("Join a Family") },
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showJoinFamilyOptions = true }
+            )
+            Divider()
             
             // Testing Section (DEBUG only)
             android.util.Log.d("SettingsScreen", "BuildConfig.DEBUG=${com.HammersTech.RoutineChart.BuildConfig.DEBUG}")
@@ -209,4 +208,3 @@ fun SettingsScreen(
         )
     }
 }
-
