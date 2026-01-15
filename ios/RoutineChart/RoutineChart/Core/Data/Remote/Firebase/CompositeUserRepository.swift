@@ -99,6 +99,7 @@ final class CompositeUserRepository: UserRepository {
     /// Sync user from Firestore to local database
     /// Used for initial sync or when going online
     /// IMPORTANT: Syncs the Family first to satisfy foreign key constraints
+    /// If the Family doesn't exist in Firestore, the User sync will fail (data integrity issue)
     func syncFromFirestore(userId: String) async throws {
         do {
             guard let firestoreUser = try await syncService.syncFromFirestore(userId: userId) else {
@@ -140,42 +141,28 @@ final class CompositeUserRepository: UserRepository {
                             existingFamily = try await familyRepo.get(id: firestoreUser.familyId)
                             if existingFamily == nil {
                                 // Family sync reported success but Family still not found locally
-                                // This could mean the Family doesn't exist in Firestore, or there was a parsing error
-                                AppLogger.database.warning("⚠️ Family sync reported success but Family \(firestoreUser.familyId) still not found locally. Creating placeholder Family to satisfy foreign key constraint.")
-                                
-                                // Create a minimal placeholder Family so we can update the User
-                                // This allows the User sync to succeed even if the Family can't be synced
-                                let placeholderFamily = Family(
-                                    id: firestoreUser.familyId,
-                                    name: nil,
-                                    timeZone: TimeZone.current.identifier,
-                                    weekStartsOn: 0,
-                                    planTier: .free,
-                                    createdAt: Date(),
-                                    updatedAt: Date()
+                                // This indicates a data integrity issue - the Family doesn't exist in Firestore
+                                let errorMsg = "Family \(firestoreUser.familyId) does not exist in Firestore. Cannot sync User \(userId) - data integrity issue."
+                                AppLogger.database.error("❌ \(errorMsg)")
+                                throw NSError(
+                                    domain: "CompositeUserRepository",
+                                    code: 3,
+                                    userInfo: [NSLocalizedDescriptionKey: errorMsg]
                                 )
-                                try await familyRepo.create(placeholderFamily)
-                                AppLogger.database.info("✅ Created placeholder Family: \(firestoreUser.familyId)")
                             } else {
                                 AppLogger.database.info("✅ Verified family exists locally after sync: \(firestoreUser.familyId)")
                             }
                         } catch {
-                            // Family sync failed - create a placeholder Family so User sync can proceed
-                            // This allows the User to be updated with the correct familyId even if Family sync fails
-                            AppLogger.database.warning("⚠️ Failed to sync family from Firestore: \(error.localizedDescription). Creating placeholder Family to allow User sync.")
-                            
-                            // Create a minimal placeholder Family to satisfy foreign key constraint
-                            let placeholderFamily = Family(
-                                id: firestoreUser.familyId,
-                                name: nil,
-                                timeZone: TimeZone.current.identifier,
-                                weekStartsOn: 0,
-                                planTier: .free,
-                                createdAt: Date(),
-                                updatedAt: Date()
+                            // Family sync failed - this is a data integrity issue
+                            // The User references a Family that doesn't exist in Firestore
+                            // We should NOT create placeholder families - instead, fail the sync
+                            let errorMsg = "Failed to sync Family \(firestoreUser.familyId) from Firestore: \(error.localizedDescription). Cannot sync User \(userId) - Family does not exist in Firestore (data integrity issue)."
+                            AppLogger.database.error("❌ \(errorMsg)")
+                            throw NSError(
+                                domain: "CompositeUserRepository",
+                                code: 4,
+                                userInfo: [NSLocalizedDescriptionKey: errorMsg]
                             )
-                            try await familyRepo.create(placeholderFamily)
-                            AppLogger.database.info("✅ Created placeholder Family: \(firestoreUser.familyId) to allow User sync")
                         }
                     } else {
                         AppLogger.database.info("✅ Family already exists locally: \(firestoreUser.familyId)")
