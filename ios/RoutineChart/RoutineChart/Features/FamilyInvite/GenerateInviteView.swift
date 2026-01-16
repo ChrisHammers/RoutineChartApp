@@ -199,7 +199,10 @@ struct GenerateInviteView: View {
             }
             .task {
                 // Load existing active invite when view appears
-                await viewModel.loadActiveInvite()
+                // Only load if we don't already have an invite
+                if viewModel.invite == nil && !viewModel.isLoading {
+                    await viewModel.loadActiveInvite()
+                }
             }
         }
     }

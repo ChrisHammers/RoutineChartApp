@@ -68,9 +68,32 @@ final class JoinWithCodeViewModel: ObservableObject {
                 return
             }
             
-            // Get the family
-            guard let family = try await familyRepository.get(id: invite.familyId) else {
-                errorMessage = "Family not found"
+            // Get the family - always sync from Firestore first since we need fresh data
+            let family: Family?
+            if let compositeFamilyRepo = familyRepository as? CompositeFamilyRepository {
+                AppLogger.ui.info("Syncing family \(invite.familyId) from Firestore...")
+                do {
+                    try await compositeFamilyRepo.syncFromFirestore(familyId: invite.familyId)
+                    family = try await familyRepository.get(id: invite.familyId)
+                } catch {
+                    AppLogger.ui.error("Failed to sync family from Firestore: \(error)")
+                    errorMessage = {
+                        let errorMsg = error.localizedDescription
+                        if errorMsg.contains("network") || errorMsg.contains("Network") {
+                            return "Network error. Please check your internet connection and try again."
+                        } else {
+                            return "Family not found. The invite may be invalid."
+                        }
+                    }()
+                    isJoining = false
+                    return
+                }
+            } else {
+                family = try await familyRepository.get(id: invite.familyId)
+            }
+            
+            guard let family = family else {
+                errorMessage = "Family not found. The invite may be invalid."
                 isJoining = false
                 return
             }

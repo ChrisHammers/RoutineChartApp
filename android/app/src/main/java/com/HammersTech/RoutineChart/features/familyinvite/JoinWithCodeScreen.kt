@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -145,14 +144,7 @@ fun JoinWithCodeScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = viewModel.isCodeValid && !state.isJoining
             ) {
-                if (state.isJoining) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.height(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Join Family")
-                }
+                Text(if (state.isJoining) "Joining..." else "Join Family")
             }
             
             Spacer(modifier = Modifier.height(16.dp))

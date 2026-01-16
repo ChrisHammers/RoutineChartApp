@@ -122,6 +122,51 @@ service cloud.firestore {
     }
     
     // ============================================
+    // Invites Collection (Top-Level)
+    // ============================================
+    // MIGRATED: Invites are now stored in top-level collection for simpler queries
+    // Structure: /invites/{inviteId}
+    
+    match /invites/{inviteId} {
+      // Allow any authenticated user to read invites (needed for join flow validation)
+      // This is safe because invites are validated by token/inviteCode, not by secrecy
+      allow read: if isAuthenticated();
+      
+      // Only parents can create invites for their family
+      allow create: if isAuthenticated() 
+                    && request.resource.data.familyId != null
+                    && isParentInFamily(request.resource.data.familyId);
+      
+      // Parents can update invites (e.g., deactivate, change settings)
+      // Authenticated users can update usedCount (for join flow)
+      // Restrict to only updating usedCount field for non-parents
+      allow update: if isAuthenticated() 
+                    && (isParentInFamily(resource.data.familyId)
+                        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount'])
+                            && request.resource.data.usedCount == resource.data.usedCount + 1));
+      
+      // Only parents can delete invites for their family
+      allow delete: if isAuthenticated() 
+                    && isParentInFamily(resource.data.familyId);
+    }
+    
+    // ============================================
+    // Legacy: Invites Subcollection (for migration period)
+    // ============================================
+    // Keep old subcollection rules temporarily for backward compatibility
+    // TODO: Remove after migration is complete
+    
+    match /families/{familyId}/invites/{inviteId} {
+      allow read: if isAuthenticated();
+      allow create: if isParentInFamily(familyId);
+      allow update: if isParentInFamily(familyId)
+                    || (isAuthenticated() 
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount'])
+                        && request.resource.data.usedCount == resource.data.usedCount + 1);
+      allow delete: if isParentInFamily(familyId);
+    }
+    
+    // ============================================
     // Deny all other paths (for now)
     // ============================================
     // Note: Future collections (routines, events, etc.) will be added here

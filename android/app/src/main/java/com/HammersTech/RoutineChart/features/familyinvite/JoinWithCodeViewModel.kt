@@ -65,8 +65,24 @@ class JoinWithCodeViewModel @Inject constructor(
             _state.value = _state.value.copy(isJoining = true, errorMessage = null)
             
             try {
-                // Find invite by code
-                val invite = inviteRepository.getByInviteCode(normalizedCode)
+                // Find invite by code - queries Firestore directly
+                val invite = try {
+                    inviteRepository.getByInviteCode(normalizedCode)
+                } catch (e: Exception) {
+                    AppLogger.UI.error("Failed to query invite from Firestore", e)
+                    _state.value = _state.value.copy(
+                        isJoining = false,
+                        errorMessage = when {
+                            e.message?.contains("network", ignoreCase = true) == true -> 
+                                "Network error. Please check your internet connection and try again."
+                            e.message?.contains("permission", ignoreCase = true) == true -> 
+                                "Permission denied. Please try again."
+                            else -> 
+                                "Failed to validate invite code. Please try again."
+                        }
+                    )
+                    return@launch
+                }
                 
                 if (invite == null) {
                     _state.value = _state.value.copy(
@@ -90,38 +106,35 @@ class JoinWithCodeViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Get the family - check locally first, then sync from Firestore if needed
-                var family = familyRepository.getById(invite.familyId)
-                if (family == null) {
-                    // Family doesn't exist locally - try to sync from Firestore
-                    AppLogger.UI.info("Family ${invite.familyId} not found locally, syncing from Firestore...")
+                // Get the family - always sync from Firestore first since we need fresh data
+                val family = try {
                     if (familyRepository is CompositeFamilyRepository) {
-                        try {
-                            familyRepository.syncFromFirestore(invite.familyId)
-                            family = familyRepository.getById(invite.familyId)
-                            if (family == null) {
-                                _state.value = _state.value.copy(
-                                    isJoining = false,
-                                    errorMessage = "Family not found. The invite may be invalid."
-                                )
-                                return@launch
-                            }
-                            AppLogger.UI.info("Successfully synced family ${invite.familyId} from Firestore")
-                        } catch (e: Exception) {
-                            AppLogger.UI.error("Failed to sync family from Firestore", e)
-                            _state.value = _state.value.copy(
-                                isJoining = false,
-                                errorMessage = "Family not found. The invite may be invalid."
-                            )
-                            return@launch
-                        }
+                        AppLogger.UI.info("Syncing family ${invite.familyId} from Firestore...")
+                        familyRepository.syncFromFirestore(invite.familyId)
+                        familyRepository.getById(invite.familyId)
                     } else {
-                        _state.value = _state.value.copy(
-                            isJoining = false,
-                            errorMessage = "Family not found"
-                        )
-                        return@launch
+                        familyRepository.getById(invite.familyId)
                     }
+                } catch (e: Exception) {
+                    AppLogger.UI.error("Failed to sync family from Firestore", e)
+                    _state.value = _state.value.copy(
+                        isJoining = false,
+                        errorMessage = when {
+                            e.message?.contains("network", ignoreCase = true) == true -> 
+                                "Network error. Please check your internet connection and try again."
+                            else -> 
+                                "Family not found. The invite may be invalid."
+                        }
+                    )
+                    return@launch
+                }
+                
+                if (family == null) {
+                    _state.value = _state.value.copy(
+                        isJoining = false,
+                        errorMessage = "Family not found. The invite may be invalid."
+                    )
+                    return@launch
                 }
                 
                 // Check if user is authenticated, if not, sign in anonymously

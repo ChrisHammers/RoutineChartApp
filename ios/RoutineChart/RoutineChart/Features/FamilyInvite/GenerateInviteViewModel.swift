@@ -45,10 +45,24 @@ final class GenerateInviteViewModel: ObservableObject {
         // We can't call stopRealTimeListener() here because deinit is not @MainActor isolated
     }
     
+    private var isLoadingInvites = false
+    
     func loadActiveInvite() async {
+        // Prevent duplicate calls
+        guard !isLoadingInvites else {
+            AppLogger.ui.info("loadActiveInvite already in progress, skipping duplicate call")
+            return
+        }
+        
+        isLoadingInvites = true
         isLoading = true
         loadingMessage = "Loading..."
         errorMessage = nil
+        
+        defer {
+            isLoadingInvites = false
+            isLoading = false
+        }
         
         do {
             // Get the current user's familyId (source of truth)
@@ -92,26 +106,36 @@ final class GenerateInviteViewModel: ObservableObject {
             AppLogger.ui.error("Failed to load active invite: \(error.localizedDescription)")
             // Don't show error to user - just proceed to generate new one if needed
         }
-        
-        isLoading = false
     }
     
+    private var isGeneratingInvite = false
+    
     func generateInvite() async {
+        // Prevent duplicate calls
+        guard !isGeneratingInvite else {
+            AppLogger.ui.info("generateInvite already in progress, skipping duplicate call")
+            return
+        }
+        
+        isGeneratingInvite = true
         isLoading = true
         loadingMessage = "Generating invite..."
         errorMessage = nil
+        
+        defer {
+            isGeneratingInvite = false
+            isLoading = false
+        }
         
         do {
             // Get the current user's familyId (source of truth)
             guard let authUser = authRepository.currentUser else {
                 errorMessage = "Please sign in to generate an invite"
-                isLoading = false
                 return
             }
             
             guard let user = try await userRepository.get(id: authUser.id) else {
                 errorMessage = "No user record found. Please sign in again."
-                isLoading = false
                 return
             }
             

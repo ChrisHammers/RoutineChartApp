@@ -46,13 +46,55 @@ class CompositeFamilyInviteRepository @Inject constructor(
     }
     
     override suspend fun getByToken(token: String): FamilyInvite? {
-        // Always read from local (offline-first)
-        return localRepo.getByToken(token)
+        // Query Firestore first - token lookups require internet to validate expiration
+        // This ensures we get the latest invite data and can validate expiration correctly
+        return try {
+            val invite = syncService.getByTokenFromFirestore(token)
+            // Optionally cache to local for faster subsequent lookups
+            invite?.let {
+                try {
+                    val existing = localRepo.getById(it.id)
+                    if (existing != null) {
+                        localRepo.update(it)
+                    } else {
+                        localRepo.create(it)
+                    }
+                } catch (e: Exception) {
+                    // Log but don't fail - caching is optional
+                    AppLogger.Database.error("Failed to cache invite to local: ${e.message}", e)
+                }
+            }
+            invite
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to query invite by token from Firestore: ${e.message}", e)
+            throw e
+        }
     }
     
     override suspend fun getByInviteCode(inviteCode: String): FamilyInvite? {
-        // Always read from local (offline-first)
-        return localRepo.getByInviteCode(inviteCode)
+        // Query Firestore first - invite code lookups require internet to validate expiration
+        // This ensures we get the latest invite data and can validate expiration correctly
+        return try {
+            val invite = syncService.getByInviteCodeFromFirestore(inviteCode)
+            // Optionally cache to local for faster subsequent lookups
+            invite?.let {
+                try {
+                    val existing = localRepo.getById(it.id)
+                    if (existing != null) {
+                        localRepo.update(it)
+                    } else {
+                        localRepo.create(it)
+                    }
+                } catch (e: Exception) {
+                    // Log but don't fail - caching is optional
+                    AppLogger.Database.error("Failed to cache invite to local: ${e.message}", e)
+                }
+            }
+            invite
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to query invite by code from Firestore: ${e.message}", e)
+            throw e
+        }
     }
     
     override suspend fun getActiveInvites(familyId: String): List<FamilyInvite> {

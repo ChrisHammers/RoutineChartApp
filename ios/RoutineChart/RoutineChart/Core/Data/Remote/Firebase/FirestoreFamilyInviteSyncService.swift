@@ -10,12 +10,13 @@ import FirebaseFirestore
 import OSLog
 
 /// Service for syncing FamilyInvite data to/from Firestore
+/// MIGRATED: Now uses top-level /invites collection for simpler queries
 final class FirestoreFamilyInviteSyncService {
     private let db = Firestore.firestore()
     
-    /// Collection path: /families/{familyId}/invites/{inviteId}
-    private func collectionPath(for familyId: String) -> CollectionReference {
-        db.collection("families").document(familyId).collection("invites")
+    /// Top-level invites collection: /invites/{inviteId}
+    private func invitesCollection() -> CollectionReference {
+        db.collection("invites")
     }
     
     /// Sync invite to Firestore
@@ -33,7 +34,7 @@ final class FirestoreFamilyInviteSyncService {
             "isActive": invite.isActive
         ]
         
-        try await collectionPath(for: invite.familyId)
+        try await invitesCollection()
             .document(invite.id)
             .setData(inviteData, merge: true)
         
@@ -42,7 +43,9 @@ final class FirestoreFamilyInviteSyncService {
     
     /// Sync invites from Firestore for a family
     func syncFromFirestore(familyId: String) async throws -> [FamilyInvite] {
-        let snapshot = try await collectionPath(for: familyId).getDocuments()
+        let snapshot = try await invitesCollection()
+            .whereField("familyId", isEqualTo: familyId)
+            .getDocuments(source: .server)  // Force server read to bypass cache
         
         var invites: [FamilyInvite] = []
         for document in snapshot.documents {
@@ -55,6 +58,48 @@ final class FirestoreFamilyInviteSyncService {
         
         AppLogger.database.info("Synced \(invites.count) invites from Firestore for family: \(familyId)")
         return invites
+    }
+    
+    /// Query Firestore for an invite by invite code.
+    /// Uses top-level collection with direct query (much faster than collection group).
+    /// Uses .server source to force network request and bypass cache.
+    func getByInviteCodeFromFirestore(_ inviteCode: String) async throws -> FamilyInvite? {
+        AppLogger.database.info("Querying Firestore (server) for invite code: \(inviteCode)")
+        let snapshot = try await invitesCollection()
+            .whereField("inviteCode", isEqualTo: inviteCode)
+            .limit(to: 1)
+            .getDocuments(source: .server)  // Force server read to bypass cache
+        
+        guard !snapshot.documents.isEmpty else {
+            AppLogger.database.info("No invite found with code: \(inviteCode)")
+            return nil
+        }
+        
+        let document = snapshot.documents.first!
+        let invite = try parseInvite(from: document.data(), id: document.documentID)
+        AppLogger.database.info("Found invite \(invite.id) for code: \(inviteCode)")
+        return invite
+    }
+    
+    /// Query Firestore for an invite by token.
+    /// Uses top-level collection with direct query (much faster than collection group).
+    /// Uses .server source to force network request and bypass cache.
+    func getByTokenFromFirestore(_ token: String) async throws -> FamilyInvite? {
+        AppLogger.database.info("Querying Firestore (server) for invite token: \(token)")
+        let snapshot = try await invitesCollection()
+            .whereField("token", isEqualTo: token)
+            .limit(to: 1)
+            .getDocuments(source: .server)  // Force server read to bypass cache
+        
+        guard !snapshot.documents.isEmpty else {
+            AppLogger.database.info("No invite found with token: \(token)")
+            return nil
+        }
+        
+        let document = snapshot.documents.first!
+        let invite = try parseInvite(from: document.data(), id: document.documentID)
+        AppLogger.database.info("Found invite \(invite.id) for token: \(token)")
+        return invite
     }
     
     /// Parse Firestore document data into FamilyInvite

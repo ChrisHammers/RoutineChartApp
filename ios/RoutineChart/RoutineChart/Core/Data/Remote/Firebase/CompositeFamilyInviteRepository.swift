@@ -46,13 +46,45 @@ final class CompositeFamilyInviteRepository: FamilyInviteRepository {
     }
     
     func getByToken(_ token: String) async throws -> FamilyInvite? {
-        // Always read from local (offline-first)
-        return try await localRepo.getByToken(token)
+        // Query Firestore first - token lookups require internet to validate expiration
+        // This ensures we get the latest invite data and can validate expiration correctly
+        let invite = try await syncService.getByTokenFromFirestore(token)
+        // Optionally cache to local for faster subsequent lookups
+        if let invite = invite {
+            do {
+                let existing = try await localRepo.get(id: invite.id)
+                if existing != nil {
+                    try await localRepo.update(invite)
+                } else {
+                    try await localRepo.create(invite)
+                }
+            } catch {
+                // Log but don't fail - caching is optional
+                AppLogger.database.error("Failed to cache invite to local: \(error.localizedDescription)")
+            }
+        }
+        return invite
     }
     
     func getByInviteCode(_ inviteCode: String) async throws -> FamilyInvite? {
-        // Always read from local (offline-first)
-        return try await localRepo.getByInviteCode(inviteCode)
+        // Query Firestore first - invite code lookups require internet to validate expiration
+        // This ensures we get the latest invite data and can validate expiration correctly
+        let invite = try await syncService.getByInviteCodeFromFirestore(inviteCode)
+        // Optionally cache to local for faster subsequent lookups
+        if let invite = invite {
+            do {
+                let existing = try await localRepo.get(id: invite.id)
+                if existing != nil {
+                    try await localRepo.update(invite)
+                } else {
+                    try await localRepo.create(invite)
+                }
+            } catch {
+                // Log but don't fail - caching is optional
+                AppLogger.database.error("Failed to cache invite to local: \(error.localizedDescription)")
+            }
+        }
+        return invite
     }
     
     func getActiveInvites(familyId: String) async throws -> [FamilyInvite] {

@@ -23,13 +23,13 @@ final class FirestoreInviteListener {
     let invitePublisher: PassthroughSubject<FamilyInvite?, Never> = PassthroughSubject()
     
     /// Start listening to a specific invite
+    /// MIGRATED: Now uses top-level /invites collection
     func startListening(inviteId: String, familyId: String) {
         // Stop any existing listener
         stopListening()
         
-        let docRef = db.collection("families")
-            .document(familyId)
-            .collection("invites")
+        // Use top-level /invites collection (migrated from subcollection)
+        let docRef = db.collection("invites")
             .document(inviteId)
         
         listener = docRef.addSnapshotListener { [weak self] documentSnapshot, error in

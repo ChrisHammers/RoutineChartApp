@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 /**
  * Service for syncing FamilyInvite data to/from Firestore
- * Phase 2.3.3: Firestore Sync (Invites)
+ * MIGRATED: Now uses top-level /invites collection for simpler queries
  */
 @Singleton
 class FirestoreFamilyInviteSyncService @Inject constructor() {
@@ -19,12 +19,9 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
     private val db = FirebaseFirestore.getInstance()
     
     /**
-     * Collection path: /families/{familyId}/invites/{inviteId}
+     * Top-level invites collection: /invites/{inviteId}
      */
-    private fun collectionPath(familyId: String) = db
-        .collection("families")
-        .document(familyId)
-        .collection("invites")
+    private fun invitesCollection() = db.collection("invites")
     
     /**
      * Sync invite to Firestore. Uses set(merge: true) for upsert.
@@ -48,7 +45,7 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
             
             invite.maxUses?.let { data["maxUses"] = it }
             
-            collectionPath(invite.familyId)
+            invitesCollection()
                 .document(invite.id)
                 .set(data, com.google.firebase.firestore.SetOptions.merge())
                 .await()
@@ -67,7 +64,8 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
     suspend fun syncFromFirestore(familyId: String): List<FamilyInvite> {
         return try {
             AppLogger.Database.info("Fetching invites from Firestore (server) for family: $familyId")
-            val snapshot = collectionPath(familyId)
+            val snapshot = invitesCollection()
+                .whereEqualTo("familyId", familyId)
                 .get(Source.SERVER)  // Force server read to bypass cache
                 .await()
             
@@ -95,6 +93,64 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
                     AppLogger.Database.error("Unknown error: ${e.message}")
                 }
             }
+            throw e
+        }
+    }
+    
+    /**
+     * Query Firestore for an invite by invite code.
+     * Uses top-level collection with direct query (much faster than collection group).
+     * Uses Source.SERVER to force network request and bypass cache.
+     */
+    suspend fun getByInviteCodeFromFirestore(inviteCode: String): FamilyInvite? {
+        return try {
+            AppLogger.Database.info("Querying Firestore (server) for invite code: $inviteCode")
+            val snapshot = invitesCollection()
+                .whereEqualTo("inviteCode", inviteCode)
+                .limit(1)
+                .get(Source.SERVER)  // Force server read to bypass cache
+                .await()
+            
+            if (snapshot.isEmpty) {
+                AppLogger.Database.info("No invite found with code: $inviteCode")
+                return null
+            }
+            
+            val document = snapshot.documents.first()
+            val invite = parseInvite(document.data ?: emptyMap(), document.id)
+            AppLogger.Database.info("Found invite ${invite.id} for code: $inviteCode")
+            invite
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to query invite by code from Firestore: $inviteCode", e)
+            throw e
+        }
+    }
+    
+    /**
+     * Query Firestore for an invite by token.
+     * Uses top-level collection with direct query (much faster than collection group).
+     * Uses Source.SERVER to force network request and bypass cache.
+     */
+    suspend fun getByTokenFromFirestore(token: String): FamilyInvite? {
+        return try {
+            AppLogger.Database.info("Querying Firestore (server) for invite token: $token")
+            val snapshot = invitesCollection()
+                .whereEqualTo("token", token)
+                .limit(1)
+                .get(Source.SERVER)  // Force server read to bypass cache
+                .await()
+            
+            if (snapshot.isEmpty) {
+                AppLogger.Database.info("No invite found with token: $token")
+                return null
+            }
+            
+            val document = snapshot.documents.first()
+            val invite = parseInvite(document.data ?: emptyMap(), document.id)
+            AppLogger.Database.info("Found invite ${invite.id} for token: $token")
+            invite
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to query invite by token from Firestore: $token", e)
             throw e
         }
     }
