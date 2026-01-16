@@ -57,7 +57,26 @@ final class ScanInviteViewModel: ObservableObject {
         }
         
         do {
-            // Validate invite exists and is valid
+            // CRITICAL: Authenticate user FIRST before querying Firestore
+            // Firestore security rules require authentication to read invites
+            var authUser = authRepository.currentUser
+            if authUser == nil {
+                // User is not authenticated - sign in anonymously first
+                do {
+                    authUser = try await authRepository.signInAnonymously()
+                    AppLogger.ui.info("Signed in anonymously for join family flow (QR)")
+                } catch {
+                    errorMessage = "Failed to sign in: \(error.localizedDescription)"
+                    return false
+                }
+            }
+            
+            guard let authUser = authUser else {
+                errorMessage = "Please sign in to join a family"
+                return false
+            }
+            
+            // Now that user is authenticated, query Firestore for invite
             guard let invite = try await inviteRepository.getByToken(scannedInvite.token) else {
                 errorMessage = "Invalid invite token"
                 return false
@@ -102,24 +121,7 @@ final class ScanInviteViewModel: ObservableObject {
                 return false
             }
             
-            // Check if user is authenticated, if not, sign in anonymously
-            var authUser = authRepository.currentUser
-            if authUser == nil {
-                // User is not authenticated - sign in anonymously first
-                do {
-                    authUser = try await authRepository.signInAnonymously()
-                    AppLogger.ui.info("Signed in anonymously for join family flow (QR)")
-                } catch {
-                    errorMessage = "Failed to sign in: \(error.localizedDescription)"
-                    return false
-                }
-            }
-            
-            guard let authUser = authUser else {
-                errorMessage = "Please sign in to join a family"
-                return false
-            }
-            
+            // User is already authenticated (done earlier), now link to family
             // Link user to family
             // Check if user exists in database
             if let existingUser = try await userRepository.get(id: authUser.id) {
@@ -160,7 +162,16 @@ final class ScanInviteViewModel: ObservableObject {
                 usedCount: invite.usedCount + 1,
                 isActive: invite.isActive
             )
-            try await inviteRepository.update(updatedInvite)
+            
+            AppLogger.ui.info("Incrementing usedCount for invite \(invite.id) from \(invite.usedCount) to \(updatedInvite.usedCount)")
+            do {
+                try await inviteRepository.update(updatedInvite)
+                AppLogger.ui.info("Successfully updated invite usedCount to \(updatedInvite.usedCount)")
+            } catch {
+                AppLogger.ui.error("Failed to update invite usedCount: \(error.localizedDescription)")
+                // Don't fail the entire join flow if usedCount update fails
+                // The user is already linked to the family, so log and continue
+            }
             
             return true
         } catch {

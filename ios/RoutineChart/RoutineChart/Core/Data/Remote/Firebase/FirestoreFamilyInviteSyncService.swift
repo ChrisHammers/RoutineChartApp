@@ -41,6 +41,20 @@ final class FirestoreFamilyInviteSyncService {
         AppLogger.database.info("Synced invite to Firestore: \(invite.id)")
     }
     
+    /// Increment usedCount for an invite (optimized for security rules)
+    /// Uses updateData to only update the usedCount field, which works better with security rules
+    func incrementUsedCount(inviteId: String, newUsedCount: Int) async throws {
+        let updateData: [String: Any] = [
+            "usedCount": newUsedCount
+        ]
+        
+        try await invitesCollection()
+            .document(inviteId)
+            .updateData(updateData)
+        
+        AppLogger.database.info("Incremented usedCount for invite \(inviteId) to \(newUsedCount)")
+    }
+    
     /// Sync invites from Firestore for a family
     func syncFromFirestore(familyId: String) async throws -> [FamilyInvite] {
         let snapshot = try await invitesCollection()

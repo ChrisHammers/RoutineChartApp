@@ -217,11 +217,26 @@ private fun QRCodeDisplay(
             }
             
             if (!showCopyConfirmation) {
-                Text(
-                    text = "Tap code to copy • Share with others",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Tap code to copy • Share with others",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    // Real-time usage count
+                    if (invite.usedCount > 0) {
+                        Text(
+                            text = "${invite.usedCount} ${if (invite.usedCount == 1) "person has" else "people have"} joined",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = androidx.compose.ui.graphics.Color(0xFF4CAF50), // Green color to match iOS
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
         

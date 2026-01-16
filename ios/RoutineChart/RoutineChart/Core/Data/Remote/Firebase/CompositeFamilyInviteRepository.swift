@@ -93,16 +93,33 @@ final class CompositeFamilyInviteRepository: FamilyInviteRepository {
     }
     
     func update(_ invite: FamilyInvite) async throws {
+        // Check if this is a usedCount increment before updating local
+        let existingInvite = try await localRepo.get(id: invite.id)
+        let isUsedCountIncrement = existingInvite != nil 
+            && existingInvite!.usedCount < invite.usedCount 
+            && invite.usedCount == existingInvite!.usedCount + 1
+        
         // Always write to local first (offline-first)
         try await localRepo.update(invite)
         
-        // Sync to Firestore asynchronously
-        Task {
+        // For usedCount increments, use the optimized increment method
+        // This ensures only the usedCount field is updated, which works better with security rules
+        if isUsedCountIncrement {
+            do {
+                try await syncService.incrementUsedCount(inviteId: invite.id, newUsedCount: invite.usedCount)
+                AppLogger.database.info("Incremented usedCount for invite \(invite.id) from \(existingInvite!.usedCount) to \(invite.usedCount)")
+            } catch {
+                AppLogger.database.error("Failed to increment usedCount: \(error.localizedDescription)")
+                throw error
+            }
+        } else {
+            // Regular update - sync all fields
             do {
                 try await syncService.syncToFirestore(invite)
                 AppLogger.database.info("Synced invite update to Firestore: \(invite.id)")
             } catch {
                 AppLogger.database.error("Failed to sync invite update to Firestore: \(error.localizedDescription)")
+                throw error
             }
         }
     }

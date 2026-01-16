@@ -58,6 +58,28 @@ class FirestoreFamilyInviteSyncService @Inject constructor() {
     }
     
     /**
+     * Increment usedCount for an invite (optimized for security rules)
+     * Uses update() to only update the usedCount field, which works better with security rules
+     */
+    suspend fun incrementUsedCount(inviteId: String, newUsedCount: Int) {
+        try {
+            val updateData = hashMapOf<String, Any>(
+                "usedCount" to newUsedCount
+            )
+            
+            invitesCollection()
+                .document(inviteId)
+                .update(updateData)
+                .await()
+            
+            AppLogger.Database.info("Incremented usedCount for invite $inviteId to $newUsedCount")
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to increment usedCount for invite $inviteId", e)
+            throw e
+        }
+    }
+    
+    /**
      * Fetches all invites for a given family from Firestore.
      * Uses Source.SERVER to force network request and bypass cache.
      */

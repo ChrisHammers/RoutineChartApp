@@ -105,7 +105,37 @@ class ScanInviteViewModel @Inject constructor(
             _state.value = _state.value.copy(isJoining = true, errorMessage = null)
             
             try {
-                // Validate invite exists and is valid - queries Firestore directly
+                // CRITICAL: Authenticate user FIRST before querying Firestore
+                // Firestore security rules require authentication to read invites
+                var authUser = authRepository.currentUser
+                if (authUser == null) {
+                    // User is not authenticated - sign in anonymously first
+                    val signInResult = authRepository.signInAnonymously()
+                    signInResult.fold(
+                        onSuccess = { user ->
+                            authUser = user
+                            AppLogger.UI.info("Signed in anonymously for join family flow (QR)")
+                        },
+                        onFailure = { error ->
+                            _state.value = _state.value.copy(
+                                isJoining = false,
+                                errorMessage = "Failed to sign in: ${error.message}"
+                            )
+                            return@launch
+                        }
+                    )
+                }
+                
+                val finalAuthUser = authUser
+                if (finalAuthUser == null) {
+                    _state.value = _state.value.copy(
+                        isJoining = false,
+                        errorMessage = "Please sign in to join a family"
+                    )
+                    return@launch
+                }
+                
+                // Now that user is authenticated, query Firestore for invite
                 val invite = try {
                     inviteRepository.getByToken(scannedInvite.token)
                 } catch (e: Exception) {
@@ -176,34 +206,7 @@ class ScanInviteViewModel @Inject constructor(
                     return@launch
                 }
                 
-                // Check if user is authenticated, if not, sign in anonymously
-                var authUser = authRepository.currentUser
-                if (authUser == null) {
-                    // User is not authenticated - sign in anonymously first
-                    authRepository.signInAnonymously().fold(
-                        onSuccess = { user ->
-                            authUser = user
-                            AppLogger.UI.info("Signed in anonymously for join family flow (QR)")
-                        },
-                        onFailure = { error ->
-                            _state.value = _state.value.copy(
-                                isJoining = false,
-                                errorMessage = "Failed to sign in: ${error.message}"
-                            )
-                            return@launch
-                        }
-                    )
-                }
-                
-                val finalAuthUser = authUser
-                if (finalAuthUser == null) {
-                    _state.value = _state.value.copy(
-                        isJoining = false,
-                        errorMessage = "Please sign in to join a family"
-                    )
-                    return@launch
-                }
-                
+                // User is already authenticated (done earlier), now link to family
                 // Link user to family
                 // Check if user exists in database
                 val existingUser = userRepository.getById(finalAuthUser.id)
@@ -234,7 +237,15 @@ class ScanInviteViewModel @Inject constructor(
                 
                 // Increment invite used count
                 val updatedInvite = invite.copy(usedCount = invite.usedCount + 1)
-                inviteRepository.update(updatedInvite)
+                AppLogger.UI.info("Incrementing usedCount for invite ${invite.id} from ${invite.usedCount} to ${updatedInvite.usedCount}")
+                try {
+                    inviteRepository.update(updatedInvite)
+                    AppLogger.UI.info("Successfully updated invite usedCount to ${updatedInvite.usedCount}")
+                } catch (e: Exception) {
+                    AppLogger.UI.error("Failed to update invite usedCount: ${e.message}", e)
+                    // Don't fail the entire join flow if usedCount update fails
+                    // The user is already linked to the family, so log and continue
+                }
                 
                 _state.value = _state.value.copy(
                     isJoining = false,

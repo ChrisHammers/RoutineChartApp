@@ -103,16 +103,33 @@ class CompositeFamilyInviteRepository @Inject constructor(
     }
     
     override suspend fun update(invite: FamilyInvite) {
+        // Check if this is a usedCount increment before updating local
+        val existingInvite = localRepo.getById(invite.id)
+        val isUsedCountIncrement = existingInvite != null 
+            && existingInvite.usedCount < invite.usedCount 
+            && invite.usedCount == existingInvite.usedCount + 1
+        
         // Always write to local first (offline-first)
         localRepo.update(invite)
         
-        // Sync to Firestore asynchronously
-        syncScope.launch {
+        // For usedCount increments, use the optimized increment method
+        // This ensures only the usedCount field is updated, which works better with security rules
+        if (isUsedCountIncrement && existingInvite != null) {
+            try {
+                syncService.incrementUsedCount(invite.id, invite.usedCount)
+                AppLogger.Database.info("Incremented usedCount for invite ${invite.id} from ${existingInvite.usedCount} to ${invite.usedCount}")
+            } catch (e: Exception) {
+                AppLogger.Database.error("Failed to increment usedCount: ${e.message}", e)
+                throw e
+            }
+        } else {
+            // Regular update - sync all fields
             try {
                 syncService.syncToFirestore(invite)
                 AppLogger.Database.info("Synced invite update to Firestore: ${invite.id}")
             } catch (e: Exception) {
                 AppLogger.Database.error("Failed to sync invite update to Firestore: ${e.message}", e)
+                throw e
             }
         }
     }
