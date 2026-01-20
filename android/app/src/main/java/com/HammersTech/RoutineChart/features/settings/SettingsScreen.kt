@@ -40,6 +40,7 @@ import com.HammersTech.RoutineChart.core.domain.models.Role
 import com.HammersTech.RoutineChart.features.familyinvite.JoinFamilyOptionsScreen
 import com.HammersTech.RoutineChart.features.familyinvite.JoinWithCodeScreen
 import com.HammersTech.RoutineChart.features.familyinvite.ScanInviteScreen
+import com.HammersTech.RoutineChart.features.testing.SyncCursorTestScreen
 
 /**
  * Settings screen with family management options
@@ -55,6 +56,7 @@ fun SettingsScreen(
     var showJoinFamilyOptions by remember { mutableStateOf(false) }
     var showScanQR by remember { mutableStateOf(false) }
     var showEnterCode by remember { mutableStateOf(false) }
+    var showSyncCursorTest by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -152,6 +154,27 @@ fun SettingsScreen(
                     )
                 }
                 
+                ListItem(
+                    headlineContent = { Text("SyncCursor CRUD Test") },
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingContent = {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSyncCursorTest = true }
+                )
+                
                 Divider()
             }
             
@@ -206,5 +229,10 @@ fun SettingsScreen(
                 onDismiss()
             }
         )
+    }
+    
+    // SyncCursor Test Screen (shown as full screen overlay)
+    if (showSyncCursorTest) {
+        SyncCursorTestScreen()
     }
 }

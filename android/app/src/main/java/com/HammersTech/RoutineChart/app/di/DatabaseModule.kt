@@ -11,6 +11,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineStepDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.UserDao
 import com.HammersTech.RoutineChart.core.data.local.room.daos.FamilyInviteDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,7 +34,8 @@ object DatabaseModule {
             RoutineChartDatabase.DATABASE_NAME
         )
             .addMigrations(
-                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_2_3
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_2_3,
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_3_4
             )
             .fallbackToDestructiveMigration() // Phase 1: Dev only - remove in production
             .build()
@@ -77,6 +79,11 @@ object DatabaseModule {
     @Provides
     fun provideFamilyInviteDao(database: RoutineChartDatabase): FamilyInviteDao {
         return database.familyInviteDao()
+    }
+
+    @Provides
+    fun provideSyncCursorDao(database: RoutineChartDatabase): SyncCursorDao {
+        return database.syncCursorDao()
     }
 }
 

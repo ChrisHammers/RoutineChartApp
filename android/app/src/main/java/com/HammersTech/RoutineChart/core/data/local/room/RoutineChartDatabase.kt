@@ -18,13 +18,16 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.FamilyInviteEn
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineAssignmentEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.RoutineStepEntity
+import com.HammersTech.RoutineChart.core.data.local.room.entities.SyncCursorEntity
 import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
+import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
 
 /**
  * Room database for Routine Chart App
  * Version 1: Initial schema with all core entities
  * Version 2: Added FamilyInviteEntity (Phase 2.2: QR Family Joining)
  * Version 3: Added inviteCode column to FamilyInviteEntity
+ * Version 4: Added SyncCursorEntity (Phase 3.1: Sync Infrastructure)
  */
 @Database(
     entities = [
@@ -35,9 +38,10 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.UserEntity
         RoutineStepEntity::class,
         RoutineAssignmentEntity::class,
         CompletionEventEntity::class,
-        FamilyInviteEntity::class
+        FamilyInviteEntity::class,
+        SyncCursorEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -50,6 +54,7 @@ abstract class RoutineChartDatabase : RoomDatabase() {
     abstract fun routineAssignmentDao(): RoutineAssignmentDao
     abstract fun completionEventDao(): CompletionEventDao
     abstract fun familyInviteDao(): FamilyInviteDao
+    abstract fun syncCursorDao(): SyncCursorDao
 
     companion object {
         const val DATABASE_NAME = "routine_chart.db"

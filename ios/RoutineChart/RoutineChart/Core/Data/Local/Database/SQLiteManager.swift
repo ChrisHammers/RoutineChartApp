@@ -245,6 +245,20 @@ final class SQLiteManager {
             }
         }
         
+        // V4: Add sync_cursors table (Phase 3.1: Sync Infrastructure)
+        migrator.registerMigration("v4") { db in
+            try db.create(table: "sync_cursors") { t in
+                t.column("id", .text).primaryKey() // collection name
+                t.column("collection", .text).notNull().unique()
+                t.column("lastSyncedAt", .datetime).notNull()
+            }
+            
+            // Index for collection lookups
+            try db.create(index: "idx_sync_cursors_collection", on: "sync_cursors", columns: ["collection"])
+            
+            AppLogger.database.info("Database schema v4 created - added sync_cursors table")
+        }
+        
         return migrator
     }
 }

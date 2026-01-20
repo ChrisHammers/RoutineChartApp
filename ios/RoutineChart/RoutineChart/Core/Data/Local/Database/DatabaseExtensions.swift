@@ -177,4 +177,3 @@ extension FamilyInvite: FetchableRecord, MutablePersistableRecord {
         container[Columns.isActive] = isActive
     }
 }
-
