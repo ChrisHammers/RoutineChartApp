@@ -66,7 +66,8 @@ final class AppDependencies: ObservableObject {
         // Pass familyRepo so User sync can ensure Family exists before updating User (foreign key constraint)
         self.userRepo = CompositeUserRepository(familyRepo: self.familyRepo)
         self.childRepo = SQLiteChildProfileRepository()
-        self.routineRepo = SQLiteRoutineRepository()
+        // Use composite repository for routines (SQLite + Firestore sync via upload queue)
+        self.routineRepo = CompositeRoutineRepository()
         self.stepRepo = SQLiteRoutineStepRepository()
         self.assignmentRepo = SQLiteRoutineAssignmentRepository()
         self.eventRepo = SQLiteCompletionEventRepository()
@@ -102,7 +103,8 @@ final class AppDependencies: ObservableObject {
             childRepo: childRepo,
             routineRepo: routineRepo,
             stepRepo: stepRepo,
-            assignmentRepo: assignmentRepo
+            assignmentRepo: assignmentRepo,
+            userRepo: userRepo
         )
         
         // Subscribe to auth state changes
@@ -155,6 +157,21 @@ final class AppDependencies: ObservableObject {
                 
                 // Use the user (either synced or local)
                 currentUser = existingUser
+                
+                // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+                if let user = existingUser, let compositeRepo = routineRepo as? CompositeRoutineRepository {
+                    Task {
+                        do {
+                            let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
+                            if uploaded > 0 {
+                                AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
+                            }
+                        } catch {
+                            AppLogger.database.warning("⚠️ Failed to upload unsynced routines: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                
                 return
             }
             
@@ -229,6 +246,20 @@ final class AppDependencies: ObservableObject {
             currentUser = newUser
             
             AppLogger.database.info("✅ Created family and user for parent: \(authUser.id), familyId: \(family.id)")
+            
+            // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+            if let compositeRepo = routineRepo as? CompositeRoutineRepository {
+                Task {
+                    do {
+                        let uploaded = try await compositeRepo.uploadUnsynced(familyId: family.id)
+                        if uploaded > 0 {
+                            AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
+                        }
+                    } catch {
+                        AppLogger.database.warning("⚠️ Failed to upload unsynced routines: \(error.localizedDescription)")
+                    }
+                }
+            }
         } catch {
             AppLogger.error("Failed to load/create current user: \(error.localizedDescription)")
             currentUser = nil

@@ -21,13 +21,15 @@ final class CreateRoutineUseCase {
     }
     
     func execute(
-        familyId: String,
+        userId: String,
+        familyId: String? = nil,
         title: String,
         iconName: String? = nil,
         steps: [(label: String?, iconName: String?)]
     ) async throws -> Routine {
         // Create routine
         let routine = Routine(
+            userId: userId,
             familyId: familyId,
             title: title,
             iconName: iconName
@@ -39,7 +41,6 @@ final class CreateRoutineUseCase {
         for (index, stepData) in steps.enumerated() {
             let step = RoutineStep(
                 routineId: routine.id,
-                familyId: familyId,
                 orderIndex: index,
                 label: stepData.label,
                 iconName: stepData.iconName

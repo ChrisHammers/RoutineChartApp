@@ -103,8 +103,6 @@ final class SQLiteManager {
                 t.column("id", .text).primaryKey()
                 t.column("routineId", .text).notNull()
                     .references("routines", onDelete: .cascade)
-                t.column("familyId", .text).notNull()
-                    .references("families", onDelete: .cascade)
                 t.column("orderIndex", .integer).notNull()
                 t.column("label", .text)
                 t.column("iconName", .text)
@@ -257,6 +255,136 @@ final class SQLiteManager {
             try db.create(index: "idx_sync_cursors_collection", on: "sync_cursors", columns: ["collection"])
             
             AppLogger.database.info("Database schema v4 created - added sync_cursors table")
+        }
+        
+        // V5: Add synced flag to routines table (Phase 3.2: Upload Queue)
+        migrator.registerMigration("v5") { db in
+            // Check if column exists using pragma_table_info (same pattern as v3)
+            let columnExists: Bool = {
+                do {
+                    let count = try Int.fetchOne(
+                        db,
+                        sql: "SELECT COUNT(*) FROM pragma_table_info('routines') WHERE name = 'synced'"
+                    ) ?? 0
+                    return count > 0
+                } catch {
+                    // If pragma fails, assume column doesn't exist
+                    return false
+                }
+            }()
+            
+            if !columnExists {
+                // Add synced column (SQLite stores booleans as INTEGER: 0 = false, 1 = true)
+                try db.execute(sql: "ALTER TABLE routines ADD COLUMN synced INTEGER NOT NULL DEFAULT 0")
+                
+                // Create index for efficient unsynced queries
+                try db.create(index: "idx_routines_synced", on: "routines", columns: ["synced", "familyId"])
+                
+                AppLogger.database.info("Database schema v5 created - added synced column to routines")
+            } else {
+                AppLogger.database.info("Database schema v5 skipped - synced column already exists")
+            }
+        }
+        
+        // V6: Add userId column and make familyId nullable (routines as top-level documents)
+        migrator.registerMigration("v6") { db in
+            // Check if userId column exists
+            let userIdExists: Bool = {
+                do {
+                    let count = try Int.fetchOne(
+                        db,
+                        sql: "SELECT COUNT(*) FROM pragma_table_info('routines') WHERE name = 'userId'"
+                    ) ?? 0
+                    return count > 0
+                } catch {
+                    return false
+                }
+            }()
+            
+            if !userIdExists {
+                // Add userId column (required)
+                try db.execute(sql: "ALTER TABLE routines ADD COLUMN userId TEXT")
+                
+                // For existing routines, we need to set userId
+                // Strategy: For routines with a familyId, get the first parent user from that family
+                // For routines without familyId, we can't determine the user, so we'll need to handle this
+                // For now, set userId to a placeholder that indicates migration is needed
+                // The app will need to update these routines with the correct userId
+                try db.execute(sql: """
+                    UPDATE routines 
+                    SET userId = (
+                        SELECT u.id 
+                        FROM users u 
+                        WHERE u.familyId = routines.familyId 
+                        AND u.role = 'parent' 
+                        LIMIT 1
+                    )
+                    WHERE userId IS NULL 
+                    AND familyId IS NOT NULL
+                """)
+                
+                // For routines that still don't have a userId (shouldn't happen in practice)
+                // Set to a migration marker - app will need to handle these
+                try db.execute(sql: "UPDATE routines SET userId = '__MIGRATION_NEEDED__' WHERE userId IS NULL")
+                
+                AppLogger.database.info("Database schema v6 created - added userId column to routines")
+            } else {
+                AppLogger.database.info("Database schema v6 skipped - userId column already exists")
+            }
+            
+            // Make familyId nullable (SQLite doesn't support ALTER COLUMN, so this is informational)
+            // The app logic will handle nullable familyId
+            AppLogger.database.info("Database schema v6 - familyId is now nullable (handled by app logic)")
+        }
+        
+        // V7: Remove familyId column from routine_steps table (not needed - steps queried by routineId only)
+        migrator.registerMigration("v7") { db in
+            // Check if familyId column exists
+            let familyIdExists: Bool = {
+                do {
+                    let count = try Int.fetchOne(
+                        db,
+                        sql: "SELECT COUNT(*) FROM pragma_table_info('routine_steps') WHERE name = 'familyId'"
+                    ) ?? 0
+                    return count > 0
+                } catch {
+                    return false
+                }
+            }()
+            
+            if familyIdExists {
+                // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
+                // This is a more complex migration, but necessary to remove the column
+                try db.execute(sql: """
+                    CREATE TABLE routine_steps_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        routineId TEXT NOT NULL REFERENCES routines(id) ON DELETE CASCADE,
+                        orderIndex INTEGER NOT NULL,
+                        label TEXT,
+                        iconName TEXT,
+                        audioCueUrl TEXT,
+                        createdAt TEXT NOT NULL,
+                        deletedAt TEXT
+                    )
+                """)
+                
+                // Copy data (excluding familyId)
+                try db.execute(sql: """
+                    INSERT INTO routine_steps_new (id, routineId, orderIndex, label, iconName, audioCueUrl, createdAt, deletedAt)
+                    SELECT id, routineId, orderIndex, label, iconName, audioCueUrl, createdAt, deletedAt
+                    FROM routine_steps
+                """)
+                
+                // Drop old table
+                try db.execute(sql: "DROP TABLE routine_steps")
+                
+                // Rename new table
+                try db.execute(sql: "ALTER TABLE routine_steps_new RENAME TO routine_steps")
+                
+                AppLogger.database.info("Database schema v7 created - removed familyId column from routine_steps")
+            } else {
+                AppLogger.database.info("Database schema v7 skipped - familyId column already removed")
+            }
         }
         
         return migrator

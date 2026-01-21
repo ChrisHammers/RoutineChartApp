@@ -126,7 +126,7 @@ final class FirestoreFamilyInviteSyncService {
               let expiresAtTimestamp = data["expiresAt"] as? Timestamp,
               let usedCount = data["usedCount"] as? Int,
               let isActive = data["isActive"] as? Bool else {
-            throw SyncError.invalidData
+            throw SyncError.invalidData("Missing required fields for FamilyInvite")
         }
         
         let createdAt = createdAtTimestamp.dateValue()

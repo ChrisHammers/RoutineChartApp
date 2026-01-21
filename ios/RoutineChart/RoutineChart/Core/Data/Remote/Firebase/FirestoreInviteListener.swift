@@ -77,7 +77,7 @@ final class FirestoreInviteListener {
               let expiresAtTimestamp = data["expiresAt"] as? Timestamp,
               let usedCount = data["usedCount"] as? Int,
               let isActive = data["isActive"] as? Bool else {
-            throw SyncError.invalidData
+            throw SyncError.invalidData("Missing required fields for Invite")
         }
         
         let createdAt = createdAtTimestamp.dateValue()

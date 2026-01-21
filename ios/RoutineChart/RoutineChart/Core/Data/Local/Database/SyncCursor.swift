@@ -22,24 +22,3 @@ struct SyncCursor: Identifiable, Equatable, Sendable {
     }
 }
 
-// MARK: - GRDB Conformance
-
-extension SyncCursor: FetchableRecord, MutablePersistableRecord {
-    static let databaseTableName = "sync_cursors"
-    
-    enum Columns: String, ColumnExpression {
-        case id, collection, lastSyncedAt
-    }
-    
-    nonisolated init(row: Row) {
-        id = row[Columns.id]
-        collection = row[Columns.collection]
-        lastSyncedAt = row[Columns.lastSyncedAt]
-    }
-    
-    nonisolated func encode(to container: inout PersistenceContainer) {
-        container[Columns.id] = id
-        container[Columns.collection] = collection
-        container[Columns.lastSyncedAt] = lastSyncedAt
-    }
-}

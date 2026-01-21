@@ -167,10 +167,43 @@ service cloud.firestore {
     }
     
     // ============================================
+    // Routines Collection (Top-Level)
+    // ============================================
+    // Routines are stored as top-level documents to support single-user routines
+    // Structure: /routines/{routineId}
+    // familyId is optional - if null, routine belongs to userId; if present, routine is shared with family
+    
+    match /routines/{routineId} {
+      // Users can read their own routines (where userId matches) or family routines
+      allow read: if isAuthenticated() 
+                  && (resource.data.userId == request.auth.uid
+                      || (resource.data.familyId != null 
+                          && belongsToFamily(resource.data.familyId)));
+      
+      // Users can create routines for themselves or for their family (if parent)
+      allow create: if isAuthenticated() 
+                    && request.resource.data.userId == request.auth.uid
+                    && (request.resource.data.familyId == null
+                        || (request.resource.data.familyId != null 
+                            && isParentInFamily(request.resource.data.familyId)));
+      
+      // Users can update their own routines or family routines (if parent)
+      allow update: if isAuthenticated() 
+                    && (resource.data.userId == request.auth.uid
+                        || (resource.data.familyId != null 
+                            && isParentInFamily(resource.data.familyId)));
+      
+      // Users can delete their own routines or family routines (if parent)
+      allow delete: if isAuthenticated() 
+                    && (resource.data.userId == request.auth.uid
+                        || (resource.data.familyId != null 
+                            && isParentInFamily(resource.data.familyId)));
+    }
+    
+    // ============================================
     // Deny all other paths (for now)
     // ============================================
-    // Note: Future collections (routines, events, etc.) will be added here
-    // For Phase 2.3, we only need users, families, and invites
+    // Note: Future collections (events, etc.) will be added here
     
     match /{document=**} {
       allow read, write: if false;

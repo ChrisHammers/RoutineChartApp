@@ -96,6 +96,13 @@ final class CompositeUserRepository: UserRepository {
     
     // MARK: - Sync Methods
     
+    /// Sync user to Firestore (explicit sync, not async background)
+    /// Used when we need to ensure the user document exists in Firestore before other operations
+    func syncToFirestore(_ user: User) async throws {
+        try await syncService.syncToFirestore(user)
+        AppLogger.database.info("✅ Synced user to Firestore: \(user.id)")
+    }
+    
     /// Sync user from Firestore to local database
     /// Used for initial sync or when going online
     /// IMPORTANT: Syncs the Family first to satisfy foreign key constraints

@@ -19,6 +19,8 @@ final class RoutineBuilderViewModel: ObservableObject {
     private let routineAssignmentRepository: RoutineAssignmentRepository
     private let childProfileRepository: ChildProfileRepository
     private let familyRepository: FamilyRepository
+    private let authRepository: AuthRepository
+    private let userRepository: UserRepository
     
     private var familyId: String?
     private let existingRoutine: Routine?
@@ -36,7 +38,9 @@ final class RoutineBuilderViewModel: ObservableObject {
         routineStepRepository: RoutineStepRepository,
         routineAssignmentRepository: RoutineAssignmentRepository,
         childProfileRepository: ChildProfileRepository,
-        familyRepository: FamilyRepository
+        familyRepository: FamilyRepository,
+        authRepository: AuthRepository,
+        userRepository: UserRepository
     ) {
         self.existingRoutine = routine
         self.createRoutineUseCase = createRoutineUseCase
@@ -45,6 +49,8 @@ final class RoutineBuilderViewModel: ObservableObject {
         self.routineAssignmentRepository = routineAssignmentRepository
         self.childProfileRepository = childProfileRepository
         self.familyRepository = familyRepository
+        self.authRepository = authRepository
+        self.userRepository = userRepository
         
         if let routine = routine {
             self.title = routine.title
@@ -54,17 +60,22 @@ final class RoutineBuilderViewModel: ObservableObject {
     
     func loadData() async {
         do {
-            // Get family
-            let families = try await familyRepository.getAll()
-            guard let family = families.first else {
-                errorMessage = "No family found"
+            // Get current authenticated user to find their familyId
+            guard let authUser = authRepository.currentUser else {
+                errorMessage = "Not signed in"
                 return
             }
             
-            familyId = family.id
+            // Get user record to find their familyId
+            guard let user = try await userRepository.get(id: authUser.id) else {
+                errorMessage = "User not found. Please join a family first."
+                return
+            }
             
-            // Load children
-            children = try await childProfileRepository.getAll(familyId: family.id)
+            familyId = user.familyId
+            
+            // Load children for the user's family
+            children = try await childProfileRepository.getAll(familyId: user.familyId)
             
             // If editing, load existing steps and assignments
             if let routine = existingRoutine {
@@ -74,7 +85,7 @@ final class RoutineBuilderViewModel: ObservableObject {
                     .map { StepInput(label: $0.label ?? "", iconName: $0.iconName ?? "⚪️") }
                 
                 // Load assignments
-                let assignments = try await routineAssignmentRepository.getByRoutine(familyId: family.id, routineId: routine.id)
+                let assignments = try await routineAssignmentRepository.getByRoutine(familyId: user.familyId, routineId: routine.id)
                 selectedChildIds = Set(assignments.filter { $0.isActive }.map { $0.childId })
             }
             
@@ -138,7 +149,6 @@ final class RoutineBuilderViewModel: ObservableObject {
                     let step = RoutineStep(
                         id: UUID().uuidString,
                         routineId: existingRoutine.id,
-                        familyId: familyId,
                         orderIndex: index,
                         label: stepInput.label,
                         iconName: stepInput.iconName,
@@ -152,9 +162,17 @@ final class RoutineBuilderViewModel: ObservableObject {
                 routine = updated
             } else {
                 // Create new routine with steps
+                // Get current user ID for routine ownership
+                guard let authUser = authRepository.currentUser else {
+                    errorMessage = "Not signed in"
+                    isSaving = false
+                    return false
+                }
+                
                 let stepInputs = steps.map { (label: $0.label, iconName: $0.iconName) }
                 routine = try await createRoutineUseCase.execute(
-                    familyId: familyId,
+                    userId: authUser.id,
+                    familyId: familyId, // Optional - if nil, routine is personal
                     title: title,
                     iconName: iconName,
                     steps: stepInputs

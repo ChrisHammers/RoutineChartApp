@@ -14,7 +14,8 @@ struct ParentDashboardView: View {
             routineRepository: dependencies.routineRepository,
             childProfileRepository: dependencies.childProfileRepository,
             familyRepository: dependencies.familyRepository,
-            authRepository: dependencies.authRepository
+            authRepository: dependencies.authRepository,
+            userRepository: dependencies.userRepository
         ))
     }
     

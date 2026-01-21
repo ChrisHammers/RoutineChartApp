@@ -13,6 +13,7 @@ final class ParentDashboardViewModel: ObservableObject {
     private let childProfileRepository: ChildProfileRepository
     private let familyRepository: FamilyRepository
     private let authRepository: AuthRepository
+    private let userRepository: UserRepository
     
     private var familyId: String?
     
@@ -20,12 +21,14 @@ final class ParentDashboardViewModel: ObservableObject {
         routineRepository: RoutineRepository,
         childProfileRepository: ChildProfileRepository,
         familyRepository: FamilyRepository,
-        authRepository: AuthRepository
+        authRepository: AuthRepository,
+        userRepository: UserRepository
     ) {
         self.routineRepository = routineRepository
         self.childProfileRepository = childProfileRepository
         self.familyRepository = familyRepository
         self.authRepository = authRepository
+        self.userRepository = userRepository
     }
     
     func loadData() async {
@@ -33,24 +36,30 @@ final class ParentDashboardViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            // Get family
-            let families = try await familyRepository.getAll()
-            guard let family = families.first else {
-                errorMessage = "No family found"
+            // Get current authenticated user to find their familyId
+            guard let authUser = authRepository.currentUser else {
+                errorMessage = "Not signed in"
                 isLoading = false
                 return
             }
             
-            familyId = family.id
+            // Get user record to find their familyId
+            guard let user = try await userRepository.get(id: authUser.id) else {
+                errorMessage = "User not found. Please join a family first."
+                isLoading = false
+                return
+            }
             
-            // Load routines (exclude deleted)
-            let allRoutines = try await routineRepository.getAll(familyId: family.id, includeDeleted: false)
+            familyId = user.familyId
+            
+            // Load routines (exclude deleted) for the user's family
+            let allRoutines = try await routineRepository.getAll(familyId: user.familyId, includeDeleted: false)
             routines = allRoutines.sorted { $0.createdAt < $1.createdAt }
             
-            // Load children
-            children = try await childProfileRepository.getAll(familyId: family.id)
+            // Load children for the user's family
+            children = try await childProfileRepository.getAll(familyId: user.familyId)
             
-            AppLogger.ui.info("Loaded \(self.routines.count) routines and \(self.children.count) children")
+            AppLogger.ui.info("Loaded \(self.routines.count) routines and \(self.children.count) children for family: \(user.familyId)")
         } catch {
             AppLogger.ui.error("Error loading dashboard data: \(error.localizedDescription)")
             errorMessage = error.localizedDescription

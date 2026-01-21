@@ -87,7 +87,7 @@ final class FirestoreFamilySyncService {
               let planTier = PlanTier(rawValue: planTierRaw),
               let createdAtTimestamp = data["createdAt"] as? Timestamp,
               let updatedAtTimestamp = data["updatedAt"] as? Timestamp else {
-            throw SyncError.invalidData
+            throw SyncError.invalidData("Missing required fields for Family")
         }
         
         let name = data["name"] as? String

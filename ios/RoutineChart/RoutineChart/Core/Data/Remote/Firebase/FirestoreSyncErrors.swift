@@ -8,13 +8,13 @@
 import Foundation
 
 enum SyncError: LocalizedError {
-    case invalidData
+    case invalidData(String)
     case networkError
     
     var errorDescription: String? {
         switch self {
-        case .invalidData:
-            return "Invalid data format from Firestore"
+        case .invalidData(let error):
+            return "Invalid data format from Firestore: /(error)"
         case .networkError:
             return "Network error during sync"
         }

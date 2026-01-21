@@ -54,7 +54,7 @@ final class FirestoreUserSyncService {
               let role = Role(rawValue: roleString),
               let displayName = data["displayName"] as? String,
               let createdAtTimestamp = data["createdAt"] as? Timestamp else {
-            throw SyncError.invalidData
+            throw SyncError.invalidData("Missing required fields for User")
         }
         
         let email = data["email"] as? String

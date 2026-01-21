@@ -14,22 +14,25 @@ final class SeedDataManager {
     private let routineRepo: RoutineRepository
     private let stepRepo: RoutineStepRepository
     private let assignmentRepo: RoutineAssignmentRepository
+    private let userRepo: UserRepository
     
     init(
         familyRepo: FamilyRepository,
         childRepo: ChildProfileRepository,
         routineRepo: RoutineRepository,
         stepRepo: RoutineStepRepository,
-        assignmentRepo: RoutineAssignmentRepository
+        assignmentRepo: RoutineAssignmentRepository,
+        userRepo: UserRepository
     ) {
         self.familyRepo = familyRepo
         self.childRepo = childRepo
         self.routineRepo = routineRepo
         self.stepRepo = stepRepo
         self.assignmentRepo = assignmentRepo
+        self.userRepo = userRepo
     }
     
-    func seedIfNeeded() async throws {
+    func seedIfNeeded(userId: String) async throws {
         // Check if already seeded
         let families = try await familyRepo.getAll()
         guard families.isEmpty else {
@@ -69,6 +72,7 @@ final class SeedDataManager {
         
         // Create Morning Routine
         let morningRoutine = Routine(
+            userId: userId,
             familyId: family.id,
             title: "Morning Routine",
             iconName: "☀️"
@@ -86,7 +90,6 @@ final class SeedDataManager {
         for (index, (label, icon)) in morningSteps.enumerated() {
             let step = RoutineStep(
                 routineId: morningRoutine.id,
-                familyId: family.id,
                 orderIndex: index,
                 label: label,
                 iconName: icon
@@ -96,6 +99,7 @@ final class SeedDataManager {
         
         // Create Bedtime Routine
         let bedtimeRoutine = Routine(
+            userId: userId,
             familyId: family.id,
             title: "Bedtime Routine",
             iconName: "🌙"
@@ -113,7 +117,6 @@ final class SeedDataManager {
         for (index, (label, icon)) in bedtimeSteps.enumerated() {
             let step = RoutineStep(
                 routineId: bedtimeRoutine.id,
-                familyId: family.id,
                 orderIndex: index,
                 label: label,
                 iconName: icon

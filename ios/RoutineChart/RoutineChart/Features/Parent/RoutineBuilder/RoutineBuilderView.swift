@@ -15,7 +15,9 @@ struct RoutineBuilderView: View {
             routineStepRepository: dependencies.routineStepRepository,
             routineAssignmentRepository: dependencies.routineAssignmentRepository,
             childProfileRepository: dependencies.childProfileRepository,
-            familyRepository: dependencies.familyRepository
+            familyRepository: dependencies.familyRepository,
+            authRepository: dependencies.authRepository,
+            userRepository: dependencies.userRepository
         ))
         self.onDismiss = onDismiss
     }

@@ -7,9 +7,10 @@
 
 import Foundation
 
-struct Routine: Identifiable, Codable, Equatable, Hashable {
+struct Routine: Identifiable, Codable, Equatable, Hashable, Sendable {
     let id: String
-    let familyId: String
+    let userId: String // Owner of the routine (required)
+    var familyId: String? // Optional - if nil, routine is personal; if present, routine is shared with family
     var title: String
     var iconName: String?
     var version: Int
@@ -24,7 +25,8 @@ struct Routine: Identifiable, Codable, Equatable, Hashable {
     
     init(
         id: String = UUID().uuidString,
-        familyId: String,
+        userId: String,
+        familyId: String? = nil,
         title: String,
         iconName: String? = nil,
         version: Int = 1,
@@ -34,6 +36,7 @@ struct Routine: Identifiable, Codable, Equatable, Hashable {
         deletedAt: Date? = nil
     ) {
         self.id = id
+        self.userId = userId
         self.familyId = familyId
         self.title = title
         self.iconName = iconName

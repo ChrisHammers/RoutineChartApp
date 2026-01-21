@@ -74,11 +74,14 @@ extension Routine: FetchableRecord, MutablePersistableRecord {
     static let databaseTableName = "routines"
     
     enum Columns: String, ColumnExpression {
-        case id, familyId, title, iconName, version, completionRule, createdAt, updatedAt, deletedAt
+        case id, userId, familyId, title, iconName, version, completionRule, createdAt, updatedAt, deletedAt
+        // Note: synced column exists in DB but is not part of domain model
+        // It's managed separately in the repository layer
     }
     
-    func encode(to container: inout PersistenceContainer) {
+    nonisolated func encode(to container: inout PersistenceContainer) {
         container[Columns.id] = id
+        container[Columns.userId] = userId
         container[Columns.familyId] = familyId
         container[Columns.title] = title
         container[Columns.iconName] = iconName
@@ -87,6 +90,25 @@ extension Routine: FetchableRecord, MutablePersistableRecord {
         container[Columns.createdAt] = createdAt
         container[Columns.updatedAt] = updatedAt
         container[Columns.deletedAt] = deletedAt
+        // synced is managed separately in the repository layer via raw SQL
+    }
+    
+    // Custom initializer for decoding from database row
+    nonisolated init(row: Row) throws {
+        id = row[Columns.id]
+        // userId is required - if missing, this will throw (migration should set it)
+        guard let userIdValue = row[Columns.userId] as String? else {
+            throw DatabaseError.recordNotFound // Or a more specific error
+        }
+        userId = userIdValue
+        familyId = row[Columns.familyId] // Now nullable
+        title = row[Columns.title]
+        iconName = row[Columns.iconName]
+        version = row[Columns.version]
+        completionRule = CompletionRule(rawValue: row[Columns.completionRule]) ?? .all_steps_required
+        createdAt = row[Columns.createdAt]
+        updatedAt = row[Columns.updatedAt]
+        deletedAt = row[Columns.deletedAt]
     }
 }
 
@@ -96,19 +118,30 @@ extension RoutineStep: FetchableRecord, MutablePersistableRecord {
     static let databaseTableName = "routine_steps"
     
     enum Columns: String, ColumnExpression {
-        case id, routineId, familyId, orderIndex, label, iconName, audioCueUrl, createdAt, deletedAt
+        case id, routineId, orderIndex, label, iconName, audioCueUrl, createdAt, deletedAt
     }
     
-    func encode(to container: inout PersistenceContainer) {
+    nonisolated func encode(to container: inout PersistenceContainer) {
         container[Columns.id] = id
         container[Columns.routineId] = routineId
-        container[Columns.familyId] = familyId
         container[Columns.orderIndex] = orderIndex
         container[Columns.label] = label
         container[Columns.iconName] = iconName
         container[Columns.audioCueUrl] = audioCueUrl
         container[Columns.createdAt] = createdAt
         container[Columns.deletedAt] = deletedAt
+    }
+    
+    // Custom initializer for decoding from database row
+    nonisolated init(row: Row) throws {
+        id = row[Columns.id]
+        routineId = row[Columns.routineId]
+        orderIndex = row[Columns.orderIndex]
+        label = row[Columns.label]
+        iconName = row[Columns.iconName]
+        audioCueUrl = row[Columns.audioCueUrl]
+        createdAt = row[Columns.createdAt]
+        deletedAt = row[Columns.deletedAt]
     }
 }
 
@@ -175,5 +208,28 @@ extension FamilyInvite: FetchableRecord, MutablePersistableRecord {
         container[Columns.maxUses] = maxUses
         container[Columns.usedCount] = usedCount
         container[Columns.isActive] = isActive
+    }
+}
+
+// MARK: - SyncCursor
+// MARK: - GRDB Conformance
+
+extension SyncCursor: FetchableRecord, MutablePersistableRecord {
+    static let databaseTableName = "sync_cursors"
+    
+    enum Columns: String, ColumnExpression {
+        case id, collection, lastSyncedAt
+    }
+    
+    nonisolated init(row: Row) {
+        id = row[Columns.id]
+        collection = row[Columns.collection]
+        lastSyncedAt = row[Columns.lastSyncedAt]
+    }
+    
+    nonisolated func encode(to container: inout PersistenceContainer) {
+        container[Columns.id] = id
+        container[Columns.collection] = collection
+        container[Columns.lastSyncedAt] = lastSyncedAt
     }
 }

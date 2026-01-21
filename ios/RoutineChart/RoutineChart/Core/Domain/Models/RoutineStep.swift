@@ -7,10 +7,9 @@
 
 import Foundation
 
-struct RoutineStep: Identifiable, Codable, Equatable, Hashable {
+struct RoutineStep: Identifiable, Codable, Equatable, Hashable, Sendable {
     let id: String
     let routineId: String
-    let familyId: String
     var orderIndex: Int
     var label: String?
     var iconName: String?
@@ -25,7 +24,6 @@ struct RoutineStep: Identifiable, Codable, Equatable, Hashable {
     init(
         id: String = UUID().uuidString,
         routineId: String,
-        familyId: String,
         orderIndex: Int,
         label: String? = nil,
         iconName: String? = nil,
@@ -35,7 +33,6 @@ struct RoutineStep: Identifiable, Codable, Equatable, Hashable {
     ) {
         self.id = id
         self.routineId = routineId
-        self.familyId = familyId
         self.orderIndex = orderIndex
         self.label = label
         self.iconName = iconName
