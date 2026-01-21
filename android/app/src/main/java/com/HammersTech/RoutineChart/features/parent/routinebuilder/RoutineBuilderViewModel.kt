@@ -210,6 +210,20 @@ class RoutineBuilderViewModel @Inject constructor(
                         iconName = state.iconName,
                         steps = state.steps.map { CreateRoutineUseCase.StepInput(it.label, it.iconName) }
                     )
+                    
+                    // Phase 3.2: Upload unsynced routines after creation
+                    if (routineRepository is com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository) {
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            try {
+                                val uploaded = routineRepository.uploadUnsynced(authUser.id, familyId)
+                                if (uploaded > 0) {
+                                    AppLogger.UI.info("✅ Uploaded $uploaded unsynced routine(s) after creation")
+                                }
+                            } catch (e: Exception) {
+                                AppLogger.UI.error("⚠️ Failed to upload unsynced routines after creation: ${e.message}", e)
+                            }
+                        }
+                    }
                 }
 
                 // Update assignments

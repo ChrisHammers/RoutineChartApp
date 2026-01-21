@@ -98,6 +98,20 @@ class CompositeUserRepository @Inject constructor(
     }
     
     /**
+     * Explicitly sync user to Firestore
+     * Used to ensure user document exists before routine uploads
+     */
+    suspend fun syncToFirestore(user: User) {
+        try {
+            syncService.syncToFirestore(user)
+            AppLogger.Database.info("✅ Explicitly synced user to Firestore: ${user.id}")
+        } catch (e: Exception) {
+            AppLogger.Database.error("Failed to sync user to Firestore: ${e.message}", e)
+            throw e
+        }
+    }
+    
+    /**
      * Sync user from Firestore to local database
      * Used for initial sync or when going online
      * IMPORTANT: Syncs the Family first to satisfy foreign key constraints
