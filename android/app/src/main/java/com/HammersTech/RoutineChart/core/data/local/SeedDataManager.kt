@@ -25,9 +25,10 @@ class SeedDataManager @Inject constructor(
     private val familyRepository: FamilyRepository,
     private val childProfileRepository: ChildProfileRepository,
     private val createRoutineUseCase: CreateRoutineUseCase,
-    private val routineAssignmentRepository: RoutineAssignmentRepository
+    private val routineAssignmentRepository: RoutineAssignmentRepository,
+    private val userRepository: com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 ) {
-    suspend fun seedDataIfNeeded() = withContext(Dispatchers.IO) {
+    suspend fun seedDataIfNeeded(userId: String) = withContext(Dispatchers.IO) {
         // Check if already seeded
         val existingFamily = familyRepository.getFirst()
         if (existingFamily != null) {
@@ -76,6 +77,7 @@ class SeedDataManager @Inject constructor(
 
         // Create Morning Routine
         val morningRoutine = createRoutineUseCase(
+            userId = userId,
             familyId = family.id,
             title = "Morning Routine",
             iconName = "☀️",
@@ -90,6 +92,7 @@ class SeedDataManager @Inject constructor(
 
         // Create Bedtime Routine
         val bedtimeRoutine = createRoutineUseCase(
+            userId = userId,
             familyId = family.id,
             title = "Bedtime Routine",
             iconName = "🌙",

@@ -38,35 +38,8 @@ class SyncCursorTestViewModel @Inject constructor(
             addResult("🧪 Starting SyncCursor CRUD Tests...")
             addResult("")
             
+            // Run all tests sequentially
             // Test 1: Verify empty
-            testInitialState()
-            
-            // Test 2: Create cursor
-            testCreate()
-            
-            // Test 3: Read cursor
-            testRead()
-            
-            // Test 4: Update cursor
-            testUpdate()
-            
-            // Test 5: Get all cursors
-            testGetAll()
-            
-            // Test 6: Delete cursor
-            testDelete()
-            
-            // Test 7: Verify empty again
-            testFinalState()
-            
-            addResult("")
-            addResult("🎉 All tests completed!")
-            _isRunning.value = false
-        }
-    }
-    
-    fun testInitialState() {
-        viewModelScope.launch {
             addResult("📋 Test 1: Verify Initial State (Empty)")
             try {
                 val cursors = cursorManager.getAllCursors()
@@ -83,26 +56,20 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testCreate() {
-        viewModelScope.launch {
+            
+            // Test 2: Create cursor
             addResult("📋 Test 2: Create Cursor")
             val testDate = Instant.now()
             try {
                 cursorManager.updateCursor(testCollection, testDate)
                 addResult("   ✅ PASS: Created cursor for '$testCollection'")
-                addResult("      Timestamp: ${testDate}")
+                addResult("      Timestamp: $testDate")
             } catch (e: Exception) {
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testRead() {
-        viewModelScope.launch {
+            
+            // Test 3: Read cursor
             addResult("📋 Test 3: Read Cursor")
             try {
                 val cursor = cursorManager.getCursor(testCollection)
@@ -117,24 +84,26 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testUpdate() {
-        viewModelScope.launch {
+            
+            // Test 4: Update cursor
             addResult("📋 Test 4: Update Cursor")
             val newDate = Instant.now().plusSeconds(3600) // 1 hour later
             try {
                 cursorManager.updateCursor(testCollection, newDate)
+                // Small delay to ensure database write completes
+                kotlinx.coroutines.delay(100)
                 val updated = cursorManager.getCursor(testCollection)
                 if (updated != null) {
-                    if (updated.lastSyncedAt == newDate) {
+                    // Compare timestamps with 1 second tolerance (SQLite stores as milliseconds, so nanoseconds are lost)
+                    val timeDiff = kotlin.math.abs(java.time.Duration.between(updated.lastSyncedAt, newDate).seconds)
+                    if (timeDiff < 1) {
                         addResult("   ✅ PASS: Updated cursor successfully")
                         addResult("      New timestamp: ${updated.lastSyncedAt}")
                     } else {
                         addResult("   ⚠️ WARNING: Update completed but timestamp mismatch")
                         addResult("      Expected: $newDate")
                         addResult("      Got: ${updated.lastSyncedAt}")
+                        addResult("      Difference: ${timeDiff}s")
                     }
                 } else {
                     addResult("   ❌ FAIL: Cursor not found after update")
@@ -143,11 +112,8 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testGetAll() {
-        viewModelScope.launch {
+            
+            // Test 5: Get all cursors
             addResult("📋 Test 5: Get All Cursors")
             try {
                 val all = cursorManager.getAllCursors()
@@ -163,14 +129,13 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testDelete() {
-        viewModelScope.launch {
+            
+            // Test 6: Delete cursor
             addResult("📋 Test 6: Delete Cursor")
             try {
                 cursorManager.deleteCursor(testCollection)
+                // Small delay to ensure database write completes
+                kotlinx.coroutines.delay(100)
                 val deleted = cursorManager.getCursor(testCollection)
                 if (deleted == null) {
                     addResult("   ✅ PASS: Deleted cursor successfully")
@@ -181,11 +146,8 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
-        }
-    }
-    
-    fun testFinalState() {
-        viewModelScope.launch {
+            
+            // Test 7: Verify empty again
             addResult("📋 Test 7: Verify Final State (Empty)")
             try {
                 val cursors = cursorManager.getAllCursors()
@@ -199,6 +161,9 @@ class SyncCursorTestViewModel @Inject constructor(
                 addResult("   ❌ FAIL: ${e.message}")
             }
             addResult("")
+            
+            addResult("🎉 All tests completed!")
+            _isRunning.value = false
         }
     }
     

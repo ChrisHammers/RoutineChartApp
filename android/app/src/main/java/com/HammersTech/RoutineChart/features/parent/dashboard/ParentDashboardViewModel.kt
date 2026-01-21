@@ -8,6 +8,7 @@ import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,8 @@ class ParentDashboardViewModel @Inject constructor(
     private val familyRepository: FamilyRepository,
     private val routineRepository: RoutineRepository,
     private val childProfileRepository: ChildProfileRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ParentDashboardState())
@@ -40,31 +42,38 @@ class ParentDashboardViewModel @Inject constructor(
             try {
                 _state.update { it.copy(isLoading = true, error = null) }
 
-                // Get family
-                val family = familyRepository.getFirst()
-                if (family == null) {
-                    _state.update { it.copy(isLoading = false, error = "No family found") }
+                // Get current authenticated user to find their familyId
+                val authUser = authRepository.currentUser
+                if (authUser == null) {
+                    _state.update { it.copy(isLoading = false, error = "Not signed in") }
+                    return@launch
+                }
+                
+                // Get user record to find their familyId
+                val user = userRepository.getById(authUser.id)
+                if (user == null) {
+                    _state.update { it.copy(isLoading = false, error = "User not found. Please join a family first.") }
                     return@launch
                 }
 
-                // Load routines (exclude deleted)
-                val allRoutines = routineRepository.getByFamilyId(family.id)
+                // Load routines (exclude deleted) for the user's family
+                val allRoutines = routineRepository.getByFamilyId(user.familyId)
                 val activeRoutines = allRoutines.filter { it.deletedAt == null }
                     .sortedBy { it.createdAt }
 
-                // Load children
-                val children = childProfileRepository.getByFamilyId(family.id)
+                // Load children for the user's family
+                val children = childProfileRepository.getByFamilyId(user.familyId)
 
                 _state.update {
                     it.copy(
-                        familyId = family.id,
+                        familyId = user.familyId,
                         routines = activeRoutines,
                         children = children,
                         isLoading = false
                     )
                 }
 
-                AppLogger.UI.info("Loaded ${activeRoutines.size} routines and ${children.size} children")
+                AppLogger.UI.info("Loaded ${activeRoutines.size} routines and ${children.size} children for family: ${user.familyId}")
             } catch (e: Exception) {
                 AppLogger.UI.error("Error loading dashboard data: ${e.message}", e)
                 _state.update { it.copy(isLoading = false, error = e.message) }

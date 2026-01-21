@@ -6,11 +6,13 @@ import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Routine
 import com.HammersTech.RoutineChart.core.domain.models.RoutineAssignment
 import com.HammersTech.RoutineChart.core.domain.models.RoutineStep
+import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineStepRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import com.HammersTech.RoutineChart.core.domain.usecases.CreateRoutineUseCase
 import com.HammersTech.RoutineChart.core.utils.AppLogger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +32,9 @@ class RoutineBuilderViewModel @Inject constructor(
     private val routineStepRepository: RoutineStepRepository,
     private val routineAssignmentRepository: RoutineAssignmentRepository,
     private val childProfileRepository: ChildProfileRepository,
-    private val familyRepository: FamilyRepository
+    private val familyRepository: FamilyRepository,
+    private val authRepository: com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository,
+    private val userRepository: com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RoutineBuilderState())
@@ -39,14 +43,21 @@ class RoutineBuilderViewModel @Inject constructor(
     fun initialize(routine: Routine?) {
         viewModelScope.launch {
             try {
-                // Get family
-                val family = familyRepository.getFirst()
-                if (family == null) {
-                    _state.update { it.copy(error = "No family found") }
+                // Get current authenticated user to find their familyId
+                val authUser = authRepository.currentUser
+                if (authUser == null) {
+                    _state.update { it.copy(error = "Not signed in") }
                     return@launch
                 }
-
-                val familyId = family.id
+                
+                // Get user record to find their familyId
+                val user = userRepository.getById(authUser.id)
+                if (user == null) {
+                    _state.update { it.copy(error = "User not found. Please join a family first.") }
+                    return@launch
+                }
+                
+                val familyId = user.familyId
 
                 // Load children
                 val children = childProfileRepository.getByFamilyId(familyId)
@@ -168,12 +179,11 @@ class RoutineBuilderViewModel @Inject constructor(
                         routineStepRepository.update(deleted)
                     }
 
-                    // Create new steps
+                    // Create new steps (no familyId needed)
                     state.steps.forEachIndexed { index, stepInput ->
                         val step = RoutineStep(
                             id = UUID.randomUUID().toString(),
                             routineId = state.existingRoutine.id,
-                            familyId = familyId,
                             orderIndex = index,
                             label = stepInput.label,
                             iconName = stepInput.iconName,
@@ -186,9 +196,16 @@ class RoutineBuilderViewModel @Inject constructor(
 
                     routine = updated
                 } else {
-                    // Create new routine
+                    // Create new routine - get current user ID
+                    val authUser = authRepository.currentUser
+                    if (authUser == null) {
+                        _state.update { it.copy(isSaving = false, error = "Not signed in") }
+                        return@launch
+                    }
+                    
                     routine = createRoutineUseCase(
-                        familyId = familyId,
+                        userId = authUser.id,
+                        familyId = familyId, // Optional - if nil, routine is personal
                         title = state.title,
                         iconName = state.iconName,
                         steps = state.steps.map { CreateRoutineUseCase.StepInput(it.label, it.iconName) }

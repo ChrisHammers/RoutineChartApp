@@ -63,8 +63,14 @@ class ChildTodayViewModel @Inject constructor(
                 _state.update { it.copy(isLoading = true) }
 
                 // Seed data if needed
-                AppLogger.UI.info("Seeding data if needed...")
-                seedDataManager.seedDataIfNeeded()
+                // Get current authenticated user ID for seeding
+                val authUser = authRepository.currentUser
+                if (authUser != null) {
+                    AppLogger.UI.info("Seeding data if needed...")
+                    seedDataManager.seedDataIfNeeded(authUser.id)
+                } else {
+                    AppLogger.UI.error("No authenticated user, skipping seed data")
+                }
 
                 // Get device ID
                 AppLogger.UI.info("Getting device ID...")

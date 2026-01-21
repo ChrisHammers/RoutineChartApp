@@ -28,6 +28,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
  * Version 2: Added FamilyInviteEntity (Phase 2.2: QR Family Joining)
  * Version 3: Added inviteCode column to FamilyInviteEntity
  * Version 4: Added SyncCursorEntity (Phase 3.1: Sync Infrastructure)
+ * Version 5: Updated routines (add userId, make familyId nullable, add synced), removed familyId from routine_steps (Phase 3.2: Upload Queue)
  */
 @Database(
     entities = [
@@ -41,7 +42,7 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
         FamilyInviteEntity::class,
         SyncCursorEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

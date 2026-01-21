@@ -38,9 +38,5 @@ class RoomRoutineStepRepository @Inject constructor(
             list.map { it.toDomain() }
         }
     }
-
-    override suspend fun getByFamilyId(familyId: String): List<RoutineStep> {
-        return routineStepDao.getByFamilyId(familyId).map { it.toDomain() }
-    }
 }
 

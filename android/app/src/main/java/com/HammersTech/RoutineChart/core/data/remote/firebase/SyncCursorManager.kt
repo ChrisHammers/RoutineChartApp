@@ -21,7 +21,9 @@ class SyncCursorManager @Inject constructor(
      * Returns null if no cursor exists (first sync)
      */
     suspend fun getCursor(collection: String): SyncCursor? {
-        return syncCursorDao.getByCollection(collection)?.toDomain()
+        val entity = syncCursorDao.getByCollection(collection)
+        AppLogger.Database.info("Getting cursor for collection '$collection': ${if (entity != null) "found" else "not found"}")
+        return entity?.toDomain()
     }
     
     /**
@@ -45,6 +47,11 @@ class SyncCursorManager @Inject constructor(
      * Get all cursors (for debugging/monitoring)
      */
     suspend fun getAllCursors(): List<SyncCursor> {
-        return syncCursorDao.getAll().map { it.toDomain() }
+        val entities = syncCursorDao.getAll()
+        AppLogger.Database.info("Getting all cursors: found ${entities.size} cursor(s)")
+        entities.forEach { entity ->
+            AppLogger.Database.info("  - ${entity.collection}: ${entity.lastSyncedAt}")
+        }
+        return entities.map { it.toDomain() }
     }
 }

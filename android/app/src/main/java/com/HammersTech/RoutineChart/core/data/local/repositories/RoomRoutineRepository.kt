@@ -16,12 +16,14 @@ class RoomRoutineRepository @Inject constructor(
     private val routineDao: RoutineDao
 ) : RoutineRepository {
     override suspend fun create(routine: Routine) {
-        routineDao.insert(RoutineEntity.fromDomain(routine))
+        // Mark as unsynced (new records need to be uploaded)
+        routineDao.insert(RoutineEntity.fromDomain(routine, synced = false))
         AppLogger.Database.info("Created routine: ${routine.id}")
     }
 
     override suspend fun update(routine: Routine) {
-        routineDao.update(RoutineEntity.fromDomain(routine))
+        // Mark as unsynced (updated records need to be uploaded)
+        routineDao.update(RoutineEntity.fromDomain(routine, synced = false))
         AppLogger.Database.info("Updated routine: ${routine.id}")
     }
 

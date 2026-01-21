@@ -7,6 +7,7 @@ import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyRepos
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStepRepository
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.CompletionEventRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
@@ -37,7 +38,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRoutineRepository(
-        impl: RoomRoutineRepository
+        impl: CompositeRoutineRepository
     ): RoutineRepository
 
     @Binds

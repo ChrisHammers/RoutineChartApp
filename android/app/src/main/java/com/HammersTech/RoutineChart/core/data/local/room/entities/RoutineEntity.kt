@@ -18,22 +18,25 @@ import java.time.Instant
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("familyId")]
+    indices = [Index("userId"), Index("familyId"), Index("synced")]
 )
 data class RoutineEntity(
     @PrimaryKey
     val id: String,
-    val familyId: String,
+    val userId: String, // Owner of the routine (required)
+    val familyId: String?, // Optional - if null, routine is personal
     val title: String,
     val iconName: String?,
     val version: Int,
     val completionRule: CompletionRule,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
+    val synced: Boolean = false // Phase 3.2: Upload queue - tracks if synced to Firestore
 ) {
     fun toDomain(): Routine = Routine(
         id = id,
+        userId = userId,
         familyId = familyId,
         title = title,
         iconName = iconName,
@@ -45,8 +48,9 @@ data class RoutineEntity(
     )
 
     companion object {
-        fun fromDomain(routine: Routine): RoutineEntity = RoutineEntity(
+        fun fromDomain(routine: Routine, synced: Boolean = false): RoutineEntity = RoutineEntity(
             id = routine.id,
+            userId = routine.userId,
             familyId = routine.familyId,
             title = routine.title,
             iconName = routine.iconName,
@@ -54,7 +58,8 @@ data class RoutineEntity(
             completionRule = routine.completionRule,
             createdAt = routine.createdAt,
             updatedAt = routine.updatedAt,
-            deletedAt = routine.deletedAt
+            deletedAt = routine.deletedAt,
+            synced = synced
         )
     }
 }

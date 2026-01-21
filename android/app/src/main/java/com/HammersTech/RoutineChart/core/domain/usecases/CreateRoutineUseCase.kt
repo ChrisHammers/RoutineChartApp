@@ -24,7 +24,8 @@ class CreateRoutineUseCase @Inject constructor(
     )
 
     suspend operator fun invoke(
-        familyId: String,
+        userId: String,
+        familyId: String? = null,
         title: String,
         iconName: String?,
         steps: List<StepInput>
@@ -35,6 +36,7 @@ class CreateRoutineUseCase @Inject constructor(
         // Create routine
         val routine = Routine(
             id = routineId,
+            userId = userId,
             familyId = familyId,
             title = title,
             iconName = iconName,
@@ -47,12 +49,11 @@ class CreateRoutineUseCase @Inject constructor(
 
         routineRepository.create(routine)
 
-        // Create steps
+        // Create steps (no familyId needed)
         steps.forEachIndexed { index, stepInput ->
             val step = RoutineStep(
                 id = UUID.randomUUID().toString(),
                 routineId = routineId,
-                familyId = familyId,
                 orderIndex = index,
                 label = stepInput.label,
                 iconName = stepInput.iconName,

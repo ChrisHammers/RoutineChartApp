@@ -15,21 +15,14 @@ import java.time.Instant
             parentColumns = ["id"],
             childColumns = ["routineId"],
             onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = FamilyEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("routineId"), Index("familyId")]
+    indices = [Index("routineId")]
 )
 data class RoutineStepEntity(
     @PrimaryKey
     val id: String,
     val routineId: String,
-    val familyId: String,
     val orderIndex: Int,
     val label: String?,
     val iconName: String?,
@@ -40,7 +33,6 @@ data class RoutineStepEntity(
     fun toDomain(): RoutineStep = RoutineStep(
         id = id,
         routineId = routineId,
-        familyId = familyId,
         orderIndex = orderIndex,
         label = label,
         iconName = iconName,
@@ -53,7 +45,6 @@ data class RoutineStepEntity(
         fun fromDomain(step: RoutineStep): RoutineStepEntity = RoutineStepEntity(
             id = step.id,
             routineId = step.routineId,
-            familyId = step.familyId,
             orderIndex = step.orderIndex,
             label = step.label,
             iconName = step.iconName,

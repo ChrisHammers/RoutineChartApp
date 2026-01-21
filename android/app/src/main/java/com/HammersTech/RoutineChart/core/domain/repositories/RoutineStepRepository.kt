@@ -12,6 +12,7 @@ interface RoutineStepRepository {
     suspend fun getById(id: String): RoutineStep?
     suspend fun getByRoutineId(routineId: String): List<RoutineStep>
     fun observeByRoutineId(routineId: String): Flow<List<RoutineStep>>
-    suspend fun getByFamilyId(familyId: String): List<RoutineStep>
+    // Note: getByFamilyId removed - RoutineStep no longer has familyId
+    // Steps are accessed via their parent Routine (getByRoutineId)
 }
 

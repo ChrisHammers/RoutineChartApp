@@ -24,8 +24,5 @@ interface RoutineStepDao {
 
     @Query("SELECT * FROM routine_steps WHERE routineId = :routineId AND deletedAt IS NULL ORDER BY orderIndex ASC")
     fun observeByRoutineId(routineId: String): Flow<List<RoutineStepEntity>>
-
-    @Query("SELECT * FROM routine_steps WHERE familyId = :familyId AND deletedAt IS NULL")
-    suspend fun getByFamilyId(familyId: String): List<RoutineStepEntity>
 }
 

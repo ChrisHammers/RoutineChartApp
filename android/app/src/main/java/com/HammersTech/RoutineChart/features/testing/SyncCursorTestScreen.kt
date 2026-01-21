@@ -1,6 +1,5 @@
 package com.HammersTech.RoutineChart.features.testing
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,9 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -104,98 +101,26 @@ fun SyncCursorTestScreen(
                     }
                 )
             ) {
-                if (isRunning) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
                 Text(
                     text = if (isRunning) "Running Tests..." else "Run All Tests",
                     style = MaterialTheme.typography.labelLarge
                 )
             }
             
-            // Individual Test Buttons
-            Column(
+            // Clear Results Button
+            OutlinedButton(
+                onClick = { viewModel.clearResults() },
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
             ) {
                 Text(
-                    text = "Individual Tests",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.fillMaxWidth()
+                    text = "Clear Results",
+                    style = MaterialTheme.typography.labelLarge
                 )
-                
-                // Row 1
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TestButton(
-                        text = "Create",
-                        onClick = { viewModel.testCreate() },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TestButton(
-                        text = "Read",
-                        onClick = { viewModel.testRead() },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TestButton(
-                        text = "Update",
-                        onClick = { viewModel.testUpdate() },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                
-                // Row 2
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    TestButton(
-                        text = "Get All",
-                        onClick = { viewModel.testGetAll() },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TestButton(
-                        text = "Delete",
-                        onClick = { viewModel.testDelete() },
-                        modifier = Modifier.weight(1f)
-                    )
-                    TestButton(
-                        text = "Clear",
-                        onClick = { viewModel.clearResults() },
-                        modifier = Modifier.weight(1f),
-                        backgroundColor = MaterialTheme.colorScheme.error
-                    )
-                }
             }
         }
     }
 }
 
-@Composable
-private fun TestButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.primary
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor
-        )
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Monospace,
-            textAlign = TextAlign.Center
-        )
-    }
-}
