@@ -52,6 +52,27 @@ final class ParentDashboardViewModel: ObservableObject {
             
             familyId = user.familyId
             
+            // CRITICAL: Pull routines from Firestore BEFORE loading from local
+            // This ensures we have the latest data when the UI loads
+            if let compositeRepo = routineRepository as? CompositeRoutineRepository {
+                do {
+                    // First, upload any unsynced local changes
+                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
+                    if uploaded > 0 {
+                        AppLogger.ui.info("✅ Uploaded \(uploaded) unsynced routine(s) before loading dashboard")
+                    }
+                    
+                    // Then, pull any remote changes (this will also pull steps)
+                    let pulled = try await compositeRepo.pullRoutines(userId: user.id, familyId: user.familyId)
+                    if pulled > 0 {
+                        AppLogger.ui.info("✅ Pulled \(pulled) routine(s) from Firestore before loading dashboard")
+                    }
+                } catch {
+                    AppLogger.ui.warning("⚠️ Failed to sync routines before loading dashboard: \(error.localizedDescription)")
+                    // Continue loading local data even if sync fails
+                }
+            }
+            
             // Load routines (exclude deleted) for the user's family
             let allRoutines = try await routineRepository.getAll(familyId: user.familyId, includeDeleted: false)
             routines = allRoutines.sorted { $0.createdAt < $1.createdAt }

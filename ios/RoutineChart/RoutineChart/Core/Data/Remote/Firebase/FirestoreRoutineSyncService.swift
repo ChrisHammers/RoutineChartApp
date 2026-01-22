@@ -57,27 +57,55 @@ final class FirestoreRoutineSyncService {
     }
     
     /// Get all routines for a user or family updated since a timestamp
+    /// If both userId and familyId are provided, queries both and combines results (deduplicated)
     func getRoutinesUpdatedSince(userId: String?, familyId: String?, since: Date) async throws -> [Routine] {
-        let collectionRef = db.collection("routines")
-        var query: Query = collectionRef
-            .whereField("updatedAt", isGreaterThan: Timestamp(date: since))
-            .order(by: "updatedAt", descending: false)
+        var allRoutines: [Routine] = []
+        var routineIds = Set<String>() // For deduplication
         
-        // Filter by userId if provided, otherwise filter by familyId
+        // Query by userId if provided (gets user's personal + family routines)
         if let userId = userId {
-            query = query.whereField("userId", isEqualTo: userId)
-        } else if let familyId = familyId {
-            query = query.whereField("familyId", isEqualTo: familyId)
-        }
-        
-        let snapshot = try await query.getDocuments()
-        
-        return try snapshot.documents.compactMap { document in
-            guard let data = document.data() as? [String: Any] else {
-                return nil
+            let collectionRef = db.collection("routines")
+            let query = collectionRef
+                .whereField("userId", isEqualTo: userId)
+                .whereField("updatedAt", isGreaterThan: Timestamp(date: since))
+                .order(by: "updatedAt", descending: false)
+            
+            let snapshot = try await query.getDocuments()
+            for document in snapshot.documents {
+                guard let data = document.data() as? [String: Any],
+                      let routine = try? parseRoutine(from: data, id: document.documentID) else {
+                    continue
+                }
+                if !routineIds.contains(routine.id) {
+                    allRoutines.append(routine)
+                    routineIds.insert(routine.id)
+                }
             }
-            return try parseRoutine(from: data, id: document.documentID)
         }
+        
+        // Query by familyId if provided (gets all family routines, including other users')
+        if let familyId = familyId {
+            let collectionRef = db.collection("routines")
+            let query = collectionRef
+                .whereField("familyId", isEqualTo: familyId)
+                .whereField("updatedAt", isGreaterThan: Timestamp(date: since))
+                .order(by: "updatedAt", descending: false)
+            
+            let snapshot = try await query.getDocuments()
+            for document in snapshot.documents {
+                guard let data = document.data() as? [String: Any],
+                      let routine = try? parseRoutine(from: data, id: document.documentID) else {
+                    continue
+                }
+                if !routineIds.contains(routine.id) {
+                    allRoutines.append(routine)
+                    routineIds.insert(routine.id)
+                }
+            }
+        }
+        
+        // Sort by updatedAt (ascending) to maintain order
+        return allRoutines.sorted { $0.updatedAt < $1.updatedAt }
     }
     
     /// Parse Firestore document data into Routine

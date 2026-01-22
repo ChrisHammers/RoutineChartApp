@@ -14,13 +14,16 @@ import OSLog
 final class RoutineUploadQueueService {
     private let localRepo: SQLiteRoutineRepository
     private let syncService: FirestoreRoutineSyncService
+    private let stepUploadQueue: RoutineStepUploadQueueService
     
     init(
         localRepo: SQLiteRoutineRepository = SQLiteRoutineRepository(),
-        syncService: FirestoreRoutineSyncService = FirestoreRoutineSyncService()
+        syncService: FirestoreRoutineSyncService = FirestoreRoutineSyncService(),
+        stepUploadQueue: RoutineStepUploadQueueService = RoutineStepUploadQueueService()
     ) {
         self.localRepo = localRepo
         self.syncService = syncService
+        self.stepUploadQueue = stepUploadQueue
     }
     
     /// Upload all unsynced routines for a family
@@ -80,12 +83,24 @@ final class RoutineUploadQueueService {
         var successCount = 0
         var failedRoutineIds: [String] = []
         
-        // Upload each routine
+        // Upload each routine and its steps
         for routine in unsyncedRoutines {
             do {
+                // First, upload the routine
                 try await syncService.syncToFirestore(routine)
                 successCount += 1
                 AppLogger.database.info("✅ Uploaded routine: \(routine.id)")
+                
+                // Then, upload all unsynced steps for this routine
+                do {
+                    let uploadedSteps = try await stepUploadQueue.uploadUnsyncedSteps(routineId: routine.id)
+                    if uploadedSteps > 0 {
+                        AppLogger.database.info("✅ Uploaded \(uploadedSteps) step(s) for routine: \(routine.id)")
+                    }
+                } catch {
+                    AppLogger.database.error("❌ Failed to upload steps for routine \(routine.id): \(error.localizedDescription)")
+                    // Don't fail the routine upload if steps fail - steps will be retried later
+                }
             } catch {
                 failedRoutineIds.append(routine.id)
                 AppLogger.database.error("❌ Failed to upload routine \(routine.id): \(error.localizedDescription)")

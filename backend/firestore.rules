@@ -198,6 +198,34 @@ service cloud.firestore {
                     && (resource.data.userId == request.auth.uid
                         || (resource.data.familyId != null 
                             && isParentInFamily(resource.data.familyId)));
+      
+      // ============================================
+      // Steps Subcollection (/routines/{routineId}/steps/{stepId})
+      // ============================================
+      
+      match /steps/{stepId} {
+        // Helper function to check if user can access the parent routine
+        function canAccessParentRoutine() {
+          let routine = get(/databases/$(database)/documents/routines/$(routineId));
+          return routine.data.userId == request.auth.uid
+                 || (routine.data.familyId != null 
+                     && belongsToFamily(routine.data.familyId));
+        }
+        
+        // Helper function to check if user can modify the parent routine
+        function canModifyParentRoutine() {
+          let routine = get(/databases/$(database)/documents/routines/$(routineId));
+          return routine.data.userId == request.auth.uid
+                 || (routine.data.familyId != null 
+                     && isParentInFamily(routine.data.familyId));
+        }
+        
+        // Users can read steps for routines they can read
+        allow read: if isAuthenticated() && canAccessParentRoutine();
+        
+        // Users can create/update/delete steps for routines they can update
+        allow create, update, delete: if isAuthenticated() && canModifyParentRoutine();
+      }
     }
     
     // ============================================

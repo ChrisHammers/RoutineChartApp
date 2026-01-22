@@ -27,6 +27,7 @@ final class RoutineBuilderViewModel: ObservableObject {
     
     struct StepInput: Identifiable {
         let id = UUID()
+        var stepId: String? // Existing step ID if editing, nil if new
         var label: String
         var iconName: String
     }
@@ -82,7 +83,7 @@ final class RoutineBuilderViewModel: ObservableObject {
                 let routineSteps = try await routineStepRepository.getAll(routineId: routine.id)
                 steps = routineSteps
                     .sorted { $0.orderIndex < $1.orderIndex }
-                    .map { StepInput(label: $0.label ?? "", iconName: $0.iconName ?? "⚪️") }
+                    .map { StepInput(stepId: $0.id, label: $0.label ?? "", iconName: $0.iconName ?? "⚪️") }
                 
                 // Load assignments
                 let assignments = try await routineAssignmentRepository.getByRoutine(familyId: user.familyId, routineId: routine.id)
@@ -97,7 +98,7 @@ final class RoutineBuilderViewModel: ObservableObject {
     }
     
     func addStep() {
-        steps.append(StepInput(label: "", iconName: "⚪️"))
+        steps.append(StepInput(stepId: nil, label: "", iconName: "⚪️"))
     }
     
     func removeStep(at index: Int) {
@@ -138,25 +139,42 @@ final class RoutineBuilderViewModel: ObservableObject {
                 
                 try await routineRepository.update(updated)
                 
-                // Delete old steps and create new ones
-                let oldSteps = try await routineStepRepository.getAll(routineId: existingRoutine.id)
-                for step in oldSteps {
+                // Get all existing steps to track which ones to keep/update/delete
+                let existingSteps = try await routineStepRepository.getAll(routineId: existingRoutine.id)
+                let existingStepIds = Set(existingSteps.map { $0.id })
+                let currentStepIds = Set(steps.compactMap { $0.stepId })
+                
+                // Soft delete steps that are no longer in the current list
+                let stepsToDelete = existingSteps.filter { !currentStepIds.contains($0.id) }
+                for step in stepsToDelete {
                     try await routineStepRepository.softDelete(id: step.id)
                 }
                 
-                // Create new steps
+                // Update or create steps
                 for (index, stepInput) in steps.enumerated() {
-                    let step = RoutineStep(
-                        id: UUID().uuidString,
-                        routineId: existingRoutine.id,
-                        orderIndex: index,
-                        label: stepInput.label,
-                        iconName: stepInput.iconName,
-                        audioCueUrl: nil,
-                        createdAt: Date(),
-                        deletedAt: nil
-                    )
-                    try await routineStepRepository.create(step)
+                    if let existingStepId = stepInput.stepId {
+                        // Update existing step
+                        if let existingStep = existingSteps.first(where: { $0.id == existingStepId }) {
+                            var updatedStep = existingStep
+                            updatedStep.label = stepInput.label.isEmpty ? nil : stepInput.label
+                            updatedStep.iconName = stepInput.iconName
+                            updatedStep.orderIndex = index
+                            try await routineStepRepository.update(updatedStep)
+                        }
+                    } else {
+                        // Create new step
+                        let newStep = RoutineStep(
+                            id: UUID().uuidString,
+                            routineId: existingRoutine.id,
+                            orderIndex: index,
+                            label: stepInput.label.isEmpty ? nil : stepInput.label,
+                            iconName: stepInput.iconName,
+                            audioCueUrl: nil,
+                            createdAt: Date(),
+                            deletedAt: nil
+                        )
+                        try await routineStepRepository.create(newStep)
+                    }
                 }
                 
                 routine = updated

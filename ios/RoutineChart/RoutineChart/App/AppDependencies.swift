@@ -159,16 +159,24 @@ final class AppDependencies: ObservableObject {
                 currentUser = existingUser
                 
                 // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+                // Phase 3.3: Pull routines from Firestore (early implementation of Phase 3.8 background sync)
+                // CRITICAL: Pull synchronously to ensure routines are available when UI loads
                 if let user = existingUser, let compositeRepo = routineRepo as? CompositeRoutineRepository {
-                    Task {
-                        do {
-                            let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
-                            if uploaded > 0 {
-                                AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
-                            }
-                        } catch {
-                            AppLogger.database.warning("⚠️ Failed to upload unsynced routines: \(error.localizedDescription)")
+                    do {
+                        // First, upload any unsynced local changes
+                        let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
+                        if uploaded > 0 {
+                            AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
                         }
+                        
+                        // Then, pull any remote changes (this will also pull steps)
+                        let pulled = try await compositeRepo.pullRoutines(userId: user.id, familyId: user.familyId)
+                        if pulled > 0 {
+                            AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore on app launch")
+                        }
+                    } catch {
+                        AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")
+                        // Continue even if sync fails - UI will show local data
                     }
                 }
                 
@@ -187,6 +195,27 @@ final class AppDependencies: ObservableObject {
                         if let user = existingUser {
                             AppLogger.database.info("✅ Synced user from Firestore: \(authUser.id), familyId: \(user.familyId)")
                             currentUser = user
+                            
+                            // CRITICAL: Pull routines after syncing user from Firestore
+                            // This ensures routines are available when UI loads
+                            if let routineCompositeRepo = routineRepo as? CompositeRoutineRepository {
+                                do {
+                                    // First, upload any unsynced local changes
+                                    let uploaded = try await routineCompositeRepo.uploadUnsynced(familyId: user.familyId)
+                                    if uploaded > 0 {
+                                        AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) after user sync")
+                                    }
+                                    
+                                    // Then, pull any remote changes
+                                    let pulled = try await routineCompositeRepo.pullRoutines(userId: user.id, familyId: user.familyId)
+                                    if pulled > 0 {
+                                        AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore after user sync")
+                                    }
+                                } catch {
+                                    AppLogger.database.warning("⚠️ Failed to sync routines after user sync: \(error.localizedDescription)")
+                                }
+                            }
+                            
                             return
                         }
                     } catch {
@@ -248,16 +277,24 @@ final class AppDependencies: ObservableObject {
             AppLogger.database.info("✅ Created family and user for parent: \(authUser.id), familyId: \(family.id)")
             
             // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+            // Phase 3.3: Pull routines from Firestore (early implementation of Phase 3.8 background sync)
+            // CRITICAL: Pull synchronously to ensure routines are available when UI loads
             if let compositeRepo = routineRepo as? CompositeRoutineRepository {
-                Task {
-                    do {
-                        let uploaded = try await compositeRepo.uploadUnsynced(familyId: family.id)
-                        if uploaded > 0 {
-                            AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
-                        }
-                    } catch {
-                        AppLogger.database.warning("⚠️ Failed to upload unsynced routines: \(error.localizedDescription)")
+                do {
+                    // First, upload any unsynced local changes
+                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: family.id)
+                    if uploaded > 0 {
+                        AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
                     }
+                    
+                    // Then, pull any remote changes (this will also pull steps)
+                    let pulled = try await compositeRepo.pullRoutines(userId: newUser.id, familyId: newUser.familyId)
+                    if pulled > 0 {
+                        AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore on app launch")
+                    }
+                } catch {
+                    AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")
+                    // Continue even if sync fails - UI will show local data
                 }
             }
         } catch {

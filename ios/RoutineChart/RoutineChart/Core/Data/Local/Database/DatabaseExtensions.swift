@@ -119,6 +119,8 @@ extension RoutineStep: FetchableRecord, MutablePersistableRecord {
     
     enum Columns: String, ColumnExpression {
         case id, routineId, orderIndex, label, iconName, audioCueUrl, createdAt, deletedAt
+        // Note: synced column exists in DB but is not part of domain model
+        // It's managed separately in the repository layer
     }
     
     nonisolated func encode(to container: inout PersistenceContainer) {

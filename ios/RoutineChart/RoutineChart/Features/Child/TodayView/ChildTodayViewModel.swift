@@ -119,6 +119,29 @@ final class ChildTodayViewModel: ObservableObject {
         guard let child = selectedChild, let familyId = familyId else { return }
         
         do {
+            // CRITICAL: Pull routines from Firestore BEFORE loading from local
+            // This ensures we have the latest data when the UI loads
+            if let compositeRepo = routineRepo as? CompositeRoutineRepository,
+               let authUser = authRepository.currentUser,
+               let user = try? await userRepository.get(id: authUser.id) {
+                do {
+                    // First, upload any unsynced local changes
+                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: familyId)
+                    if uploaded > 0 {
+                        AppLogger.ui.info("✅ Uploaded \(uploaded) unsynced routine(s) before loading child view")
+                    }
+                    
+                    // Then, pull any remote changes (this will also pull steps)
+                    let pulled = try await compositeRepo.pullRoutines(userId: user.id, familyId: familyId)
+                    if pulled > 0 {
+                        AppLogger.ui.info("✅ Pulled \(pulled) routine(s) from Firestore before loading child view")
+                    }
+                } catch {
+                    AppLogger.ui.warning("⚠️ Failed to sync routines before loading child view: \(error.localizedDescription)")
+                    // Continue loading local data even if sync fails
+                }
+            }
+            
             // Get assignments for this child
             let assignments = try await assignmentRepo.getByChild(familyId: familyId, childId: child.id)
             

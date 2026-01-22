@@ -387,6 +387,19 @@ final class SQLiteManager {
             }
         }
         
+        // V8: Add synced column to routine_steps (Phase 3.4: Sync RoutineSteps)
+        migrator.registerMigration("v8") { db in
+            AppLogger.database.info("Database schema v8 starting - adding synced column to routine_steps")
+            
+            // Add synced column (default to 0 = unsynced)
+            try db.execute(sql: "ALTER TABLE routine_steps ADD COLUMN synced INTEGER NOT NULL DEFAULT 0")
+            
+            // Create index on synced column for efficient queries
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_routine_steps_synced ON routine_steps(synced)")
+            
+            AppLogger.database.info("Database schema v8 completed - added synced column to routine_steps")
+        }
+        
         return migrator
     }
 }
