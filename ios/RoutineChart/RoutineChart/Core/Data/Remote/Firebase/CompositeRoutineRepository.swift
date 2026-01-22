@@ -62,9 +62,9 @@ final class CompositeRoutineRepository: RoutineRepository {
         AppLogger.database.info("Updated routine locally (will sync via upload queue): \(routine.id)")
     }
     
-    func getAll(familyId: String, includeDeleted: Bool) async throws -> [Routine] {
+    func getAll(userId: String, familyId: String?, includeDeleted: Bool) async throws -> [Routine] {
         // Always read from local (offline-first)
-        return try await localRepo.getAll(familyId: familyId, includeDeleted: includeDeleted)
+        return try await localRepo.getAll(userId: userId, familyId: familyId, includeDeleted: includeDeleted)
     }
     
     func softDelete(id: String) async throws {
@@ -80,13 +80,13 @@ final class CompositeRoutineRepository: RoutineRepository {
     
     /// Upload all unsynced routines for a family
     /// Returns the number of successfully uploaded routines
-    func uploadUnsynced(familyId: String) async throws -> Int {
-        return try await uploadQueue.uploadUnsyncedRoutines(familyId: familyId)
+    func uploadUnsynced(userId: String, familyId: String?) async throws -> Int {
+        return try await uploadQueue.uploadUnsyncedRoutines(userId: userId, familyId: familyId)
     }
     
-    /// Get count of unsynced routines for a family
-    func getUnsyncedCount(familyId: String) async throws -> Int {
-        return try await uploadQueue.getUnsyncedCount(familyId: familyId)
+    /// Get count of unsynced routines for a user or family
+    func getUnsyncedCount(userId: String, familyId: String?) async throws -> Int {
+        return try await uploadQueue.getUnsyncedCount(userId: userId, familyId: familyId)
     }
     
     // MARK: - Pull Cursor Methods (Phase 3.3)
@@ -106,13 +106,34 @@ final class CompositeRoutineRepository: RoutineRepository {
         let lastSyncedAt = cursor?.lastSyncedAt ?? Date(timeIntervalSince1970: 0)
         
         AppLogger.database.info("📥 Last sync timestamp: \(lastSyncedAt)")
+        AppLogger.database.info("📥 Current timestamp: \(Date())")
+        AppLogger.database.info("📥 Time difference: \(Date().timeIntervalSince(lastSyncedAt)) seconds")
         
         // Query Firestore for routines updated since the cursor
-        let remoteRoutines = try await syncService.getRoutinesUpdatedSince(
+        var remoteRoutines = try await syncService.getRoutinesUpdatedSince(
             userId: userId,
             familyId: familyId,
             since: lastSyncedAt
         )
+        
+        // If no routines found but cursor exists, check if local database is empty
+        // This handles the case where routines exist in Firestore but have older updatedAt timestamps
+        if remoteRoutines.isEmpty && cursor != nil {
+            // Check if local database has any routines for this user/family
+            let localRoutines = try await localRepo.getAll(userId: userId, familyId: familyId, includeDeleted: false)
+            AppLogger.database.info("🔍 No routines found with updatedAt filter. Local database has \(localRoutines.count) routine(s)")
+            
+            // If local is empty, try pulling ALL routines (ignore updatedAt filter)
+            if localRoutines.isEmpty {
+                AppLogger.database.info("🔄 Local database is empty - pulling ALL routines from Firestore (ignoring updatedAt filter)")
+                remoteRoutines = try await syncService.getRoutinesUpdatedSince(
+                    userId: userId,
+                    familyId: familyId,
+                    since: Date(timeIntervalSince1970: 0) // Use epoch to get all routines
+                )
+                AppLogger.database.info("📥 Found \(remoteRoutines.count) routine(s) when pulling all routines")
+            }
+        }
         
         guard !remoteRoutines.isEmpty else {
             AppLogger.database.info("✅ No new routines to pull from Firestore")

@@ -57,7 +57,7 @@ final class ParentDashboardViewModel: ObservableObject {
             if let compositeRepo = routineRepository as? CompositeRoutineRepository {
                 do {
                     // First, upload any unsynced local changes
-                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
+                    let uploaded = try await compositeRepo.uploadUnsynced(userId: user.id, familyId: user.familyId)
                     if uploaded > 0 {
                         AppLogger.ui.info("✅ Uploaded \(uploaded) unsynced routine(s) before loading dashboard")
                     }
@@ -73,8 +73,8 @@ final class ParentDashboardViewModel: ObservableObject {
                 }
             }
             
-            // Load routines (exclude deleted) for the user's family
-            let allRoutines = try await routineRepository.getAll(familyId: user.familyId, includeDeleted: false)
+            // Load routines (exclude deleted) for the user (by userId, optionally filtered by familyId)
+            let allRoutines = try await routineRepository.getAll(userId: user.id, familyId: user.familyId, includeDeleted: false)
             routines = allRoutines.sorted { $0.createdAt < $1.createdAt }
             
             // Load children for the user's family

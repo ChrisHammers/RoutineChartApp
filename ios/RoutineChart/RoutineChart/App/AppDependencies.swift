@@ -164,7 +164,7 @@ final class AppDependencies: ObservableObject {
                 if let user = existingUser, let compositeRepo = routineRepo as? CompositeRoutineRepository {
                     do {
                         // First, upload any unsynced local changes
-                        let uploaded = try await compositeRepo.uploadUnsynced(familyId: user.familyId)
+                        let uploaded = try await compositeRepo.uploadUnsynced(userId: user.id, familyId: user.familyId)
                         if uploaded > 0 {
                             AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
                         }
@@ -201,7 +201,7 @@ final class AppDependencies: ObservableObject {
                             if let routineCompositeRepo = routineRepo as? CompositeRoutineRepository {
                                 do {
                                     // First, upload any unsynced local changes
-                                    let uploaded = try await routineCompositeRepo.uploadUnsynced(familyId: user.familyId)
+                                    let uploaded = try await routineCompositeRepo.uploadUnsynced(userId: user.id, familyId: user.familyId)
                                     if uploaded > 0 {
                                         AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) after user sync")
                                     }
@@ -282,7 +282,7 @@ final class AppDependencies: ObservableObject {
             if let compositeRepo = routineRepo as? CompositeRoutineRepository {
                 do {
                     // First, upload any unsynced local changes
-                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: family.id)
+                    let uploaded = try await compositeRepo.uploadUnsynced(userId: newUser.id, familyId: newUser.familyId)
                     if uploaded > 0 {
                         AppLogger.database.info("✅ Uploaded \(uploaded) unsynced routine(s) on app launch")
                     }

@@ -62,6 +62,8 @@ final class FirestoreRoutineSyncService {
         var allRoutines: [Routine] = []
         var routineIds = Set<String>() // For deduplication
         
+        AppLogger.database.info("🔍 Querying Firestore for routines: userId=\(userId ?? "nil"), familyId=\(familyId ?? "nil"), since=\(since)")
+        
         // Query by userId if provided (gets user's personal + family routines)
         if let userId = userId {
             let collectionRef = db.collection("routines")
@@ -70,16 +72,35 @@ final class FirestoreRoutineSyncService {
                 .whereField("updatedAt", isGreaterThan: Timestamp(date: since))
                 .order(by: "updatedAt", descending: false)
             
-            let snapshot = try await query.getDocuments()
-            for document in snapshot.documents {
-                guard let data = document.data() as? [String: Any],
-                      let routine = try? parseRoutine(from: data, id: document.documentID) else {
-                    continue
+            do {
+                let snapshot = try await query.getDocuments()
+                AppLogger.database.info("📥 Query by userId found \(snapshot.documents.count) document(s)")
+                
+                for document in snapshot.documents {
+                    guard let data = document.data() as? [String: Any] else {
+                        AppLogger.database.warning("⚠️ Document \(document.documentID) has no data")
+                        continue
+                    }
+                    
+                    // Log document data for debugging
+                    let docUserId = data["userId"] as? String ?? "nil"
+                    let docFamilyId = data["familyId"] as? String ?? "nil"
+                    let docTitle = data["title"] as? String ?? "nil"
+                    AppLogger.database.info("   - Document \(document.documentID): userId=\(docUserId), familyId=\(docFamilyId), title=\(docTitle)")
+                    
+                    guard let routine = try? parseRoutine(from: data, id: document.documentID) else {
+                        AppLogger.database.warning("⚠️ Failed to parse routine from document \(document.documentID)")
+                        continue
+                    }
+                    if !routineIds.contains(routine.id) {
+                        allRoutines.append(routine)
+                        routineIds.insert(routine.id)
+                        AppLogger.database.info("   ✅ Added routine: \(routine.id) - \(routine.title)")
+                    }
                 }
-                if !routineIds.contains(routine.id) {
-                    allRoutines.append(routine)
-                    routineIds.insert(routine.id)
-                }
+            } catch {
+                AppLogger.database.error("❌ Query by userId failed: \(error.localizedDescription)")
+                throw error
             }
         }
         
@@ -91,18 +112,39 @@ final class FirestoreRoutineSyncService {
                 .whereField("updatedAt", isGreaterThan: Timestamp(date: since))
                 .order(by: "updatedAt", descending: false)
             
-            let snapshot = try await query.getDocuments()
-            for document in snapshot.documents {
-                guard let data = document.data() as? [String: Any],
-                      let routine = try? parseRoutine(from: data, id: document.documentID) else {
-                    continue
+            do {
+                let snapshot = try await query.getDocuments()
+                AppLogger.database.info("📥 Query by familyId found \(snapshot.documents.count) document(s)")
+                
+                for document in snapshot.documents {
+                    guard let data = document.data() as? [String: Any] else {
+                        AppLogger.database.warning("⚠️ Document \(document.documentID) has no data")
+                        continue
+                    }
+                    
+                    // Log document data for debugging
+                    let docUserId = data["userId"] as? String ?? "nil"
+                    let docFamilyId = data["familyId"] as? String ?? "nil"
+                    let docTitle = data["title"] as? String ?? "nil"
+                    AppLogger.database.info("   - Document \(document.documentID): userId=\(docUserId), familyId=\(docFamilyId), title=\(docTitle)")
+                    
+                    guard let routine = try? parseRoutine(from: data, id: document.documentID) else {
+                        AppLogger.database.warning("⚠️ Failed to parse routine from document \(document.documentID)")
+                        continue
+                    }
+                    if !routineIds.contains(routine.id) {
+                        allRoutines.append(routine)
+                        routineIds.insert(routine.id)
+                        AppLogger.database.info("   ✅ Added routine: \(routine.id) - \(routine.title)")
+                    }
                 }
-                if !routineIds.contains(routine.id) {
-                    allRoutines.append(routine)
-                    routineIds.insert(routine.id)
-                }
+            } catch {
+                AppLogger.database.error("❌ Query by familyId failed: \(error.localizedDescription)")
+                // Don't throw - continue with userId results
             }
         }
+        
+        AppLogger.database.info("✅ Total routines found: \(allRoutines.count) (deduplicated from \(routineIds.count) unique IDs)")
         
         // Sort by updatedAt (ascending) to maintain order
         return allRoutines.sorted { $0.updatedAt < $1.updatedAt }

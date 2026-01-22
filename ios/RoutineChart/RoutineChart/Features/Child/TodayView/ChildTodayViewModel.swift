@@ -126,7 +126,7 @@ final class ChildTodayViewModel: ObservableObject {
                let user = try? await userRepository.get(id: authUser.id) {
                 do {
                     // First, upload any unsynced local changes
-                    let uploaded = try await compositeRepo.uploadUnsynced(familyId: familyId)
+                    let uploaded = try await compositeRepo.uploadUnsynced(userId: user.id, familyId: familyId)
                     if uploaded > 0 {
                         AppLogger.ui.info("✅ Uploaded \(uploaded) unsynced routine(s) before loading child view")
                     }

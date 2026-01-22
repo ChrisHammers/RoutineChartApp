@@ -45,19 +45,31 @@ final class SQLiteRoutineRepository: RoutineRepository {
         AppLogger.database.info("Updated routine: \(routine.id)")
     }
     
-    func getAll(familyId: String, includeDeleted: Bool) async throws -> [Routine] {
+    func getAll(userId: String, familyId: String?, includeDeleted: Bool) async throws -> [Routine] {
         let db = try dbManager.database()
         return try await db.read { db in
-            var query = Routine
-                .filter(Column("familyId") == familyId)
+            // Query by userId OR familyId (if provided)
+            // Use raw SQL for OR condition
+            var sql = "SELECT * FROM routines WHERE (userId = ?"
+            var arguments: [String] = [userId]
             
-            if !includeDeleted {
-                query = query.filter(Column("deletedAt") == nil)
+            if let familyId = familyId {
+                sql += " OR familyId = ?"
+                arguments.append(familyId)
             }
             
-            return try query
-                .order(Column("createdAt").desc)
-                .fetchAll(db)
+            sql += ")"
+            
+            if !includeDeleted {
+                sql += " AND deletedAt IS NULL"
+            }
+            
+            sql += " ORDER BY createdAt DESC"
+            
+            let rows = try Row.fetchAll(db, sql: sql, arguments: StatementArguments(arguments))
+            return try rows.map { row in
+                try Routine(row: row)
+            }
         }
     }
     
@@ -78,19 +90,30 @@ final class SQLiteRoutineRepository: RoutineRepository {
     
     // MARK: - Sync Methods (Phase 3.2: Upload Queue)
     
-    /// Get all unsynced routines for a family
-    func getUnsynced(familyId: String) async throws -> [Routine] {
+    /// Get all unsynced routines for a user or family
+    func getUnsynced(userId: String, familyId: String?) async throws -> [Routine] {
         let db = try dbManager.database()
         return try await db.read { db in
             // SQLite stores booleans as INTEGER (0 = false, 1 = true)
             // Use raw SQL for more reliable boolean comparison
+            // Query by userId OR familyId (if provided)
+            var sql = "SELECT id FROM routines WHERE ((userId = ?"
+            var arguments: [String] = [userId]
+            
+            if let familyId = familyId {
+                sql += " OR familyId = ?"
+                arguments.append(familyId)
+            }
+            
+            sql += ") AND synced = 0)"
+            
             let unsyncedIds = try String.fetchAll(
                 db,
-                sql: "SELECT id FROM routines WHERE familyId = ? AND synced = 0",
-                arguments: [familyId]
+                sql: sql,
+                arguments: StatementArguments(arguments)
             )
             
-            AppLogger.database.info("🔍 Found \(unsyncedIds.count) unsynced routine ID(s): \(unsyncedIds)")
+            AppLogger.database.info("🔍 Found \(unsyncedIds.count) unsynced routine ID(s) for userId=\(userId), familyId=\(familyId ?? "nil"): \(unsyncedIds)")
             
             // Fetch the actual Routine objects
             var routines: [Routine] = []

@@ -26,20 +26,20 @@ final class RoutineUploadQueueService {
         self.stepUploadQueue = stepUploadQueue
     }
     
-    /// Upload all unsynced routines for a family
+    /// Upload all unsynced routines for a user or family
     /// Returns the number of successfully uploaded routines
-    func uploadUnsyncedRoutines(familyId: String) async throws -> Int {
-        AppLogger.database.info("🔄 Starting upload of unsynced routines for family: \(familyId)")
+    func uploadUnsyncedRoutines(userId: String, familyId: String?) async throws -> Int {
+        AppLogger.database.info("🔄 Starting upload of unsynced routines for userId: \(userId), familyId: \(familyId ?? "nil")")
         
         // Get all unsynced routines
-        let unsyncedRoutines = try await localRepo.getUnsynced(familyId: familyId)
+        let unsyncedRoutines = try await localRepo.getUnsynced(userId: userId, familyId: familyId)
         
         guard !unsyncedRoutines.isEmpty else {
-            AppLogger.database.info("✅ No unsynced routines to upload for family: \(familyId)")
+            AppLogger.database.info("✅ No unsynced routines to upload for userId: \(userId), familyId: \(familyId ?? "nil")")
             
-            // Debug: Check total routines for this family
-            let allRoutines = try await localRepo.getAll(familyId: familyId, includeDeleted: false)
-            AppLogger.database.info("🔍 Debug: Total routines for family \(familyId): \(allRoutines.count)")
+            // Debug: Check total routines for this user/family
+            let allRoutines = try await localRepo.getAll(userId: userId, familyId: familyId, includeDeleted: false)
+            AppLogger.database.info("🔍 Debug: Total routines for userId=\(userId), familyId=\(familyId ?? "nil"): \(allRoutines.count)")
             for routine in allRoutines {
                 let familyIdStr = routine.familyId ?? "nil"
                 AppLogger.database.info("   - Routine: \(routine.id), title: \(routine.title), familyId: \(familyIdStr)")
@@ -125,9 +125,9 @@ final class RoutineUploadQueueService {
         return successCount
     }
     
-    /// Get count of unsynced routines for a family
-    func getUnsyncedCount(familyId: String) async throws -> Int {
-        let unsynced = try await localRepo.getUnsynced(familyId: familyId)
+    /// Get count of unsynced routines for a user or family
+    func getUnsyncedCount(userId: String, familyId: String?) async throws -> Int {
+        let unsynced = try await localRepo.getUnsynced(userId: userId, familyId: familyId)
         return unsynced.count
     }
 }
