@@ -92,40 +92,97 @@ class FirestoreRoutineSyncService @Inject constructor() {
     
     /**
      * Get routines updated since a timestamp
-     * Can filter by userId or familyId
+     * Queries by both userId and familyId (if provided) and combines results (deduplicated)
+     * Similar to iOS implementation
      */
     suspend fun getRoutinesUpdatedSince(
-        userId: String? = null,
-        familyId: String? = null,
+        userId: String?,
+        familyId: String?,
         since: Instant
     ): List<Routine> {
-        return try {
-            var query = db.collection("routines")
-                .whereGreaterThan("updatedAt", com.google.firebase.Timestamp(java.util.Date.from(since)))
-                .orderBy("updatedAt")
-            
-            // Filter by userId if provided, otherwise filter by familyId
-            if (userId != null) {
-                query = query.whereEqualTo("userId", userId)
-            } else if (familyId != null) {
-                query = query.whereEqualTo("familyId", familyId)
-            }
-            
-            val snapshot = query.get(Source.SERVER).await()
-            
-            snapshot.documents.mapNotNull { document ->
-                val data = document.data ?: return@mapNotNull null
-                try {
-                    parseRoutine(data, document.id)
-                } catch (e: Exception) {
-                    AppLogger.Database.error("Failed to parse routine: ${document.id}", e)
-                    null
+        val allRoutines = mutableListOf<Routine>()
+        val routineIds = mutableSetOf<String>() // For deduplication
+        
+        AppLogger.Database.info("🔍 Querying Firestore for routines: userId=${userId ?: "nil"}, familyId=${familyId ?: "nil"}, since=$since")
+        
+        // Query by userId if provided (gets user's personal + family routines)
+        if (userId != null) {
+            try {
+                val query = db.collection("routines")
+                    .whereEqualTo("userId", userId)
+                    .whereGreaterThan("updatedAt", com.google.firebase.Timestamp(java.util.Date.from(since)))
+                    .orderBy("updatedAt")
+                
+                val snapshot = query.get(Source.SERVER).await()
+                AppLogger.Database.info("📥 Query by userId found ${snapshot.documents.size} document(s)")
+                
+                snapshot.documents.forEach { document ->
+                    val data = document.data ?: return@forEach
+                    
+                    // Log document data for debugging
+                    val docUserId = data["userId"] as? String ?: "nil"
+                    val docFamilyId = data["familyId"] as? String ?: "nil"
+                    val docTitle = data["title"] as? String ?: "nil"
+                    AppLogger.Database.info("   - Document ${document.id}: userId=$docUserId, familyId=$docFamilyId, title=$docTitle")
+                    
+                    try {
+                        val routine = parseRoutine(data, document.id)
+                        if (!routineIds.contains(routine.id)) {
+                            allRoutines.add(routine)
+                            routineIds.add(routine.id)
+                            AppLogger.Database.info("   ✅ Added routine: ${routine.id} - ${routine.title}")
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.Database.error("⚠️ Failed to parse routine from document ${document.id}", e)
+                    }
                 }
+            } catch (e: Exception) {
+                AppLogger.Database.error("❌ Query by userId failed: ${e.message}", e)
+                // Don't throw - continue with familyId query
             }
-        } catch (e: Exception) {
-            AppLogger.Database.error("Failed to get routines updated since: $since", e)
-            throw e
         }
+        
+        // Query by familyId if provided (gets all family routines, including other users')
+        if (familyId != null) {
+            try {
+                val query = db.collection("routines")
+                    .whereEqualTo("familyId", familyId)
+                    .whereGreaterThan("updatedAt", com.google.firebase.Timestamp(java.util.Date.from(since)))
+                    .orderBy("updatedAt")
+                
+                val snapshot = query.get(Source.SERVER).await()
+                AppLogger.Database.info("📥 Query by familyId found ${snapshot.documents.size} document(s)")
+                
+                snapshot.documents.forEach { document ->
+                    val data = document.data ?: return@forEach
+                    
+                    // Log document data for debugging
+                    val docUserId = data["userId"] as? String ?: "nil"
+                    val docFamilyId = data["familyId"] as? String ?: "nil"
+                    val docTitle = data["title"] as? String ?: "nil"
+                    AppLogger.Database.info("   - Document ${document.id}: userId=$docUserId, familyId=$docFamilyId, title=$docTitle")
+                    
+                    try {
+                        val routine = parseRoutine(data, document.id)
+                        if (!routineIds.contains(routine.id)) {
+                            allRoutines.add(routine)
+                            routineIds.add(routine.id)
+                            AppLogger.Database.info("   ✅ Added routine: ${routine.id} - ${routine.title}")
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.Database.error("⚠️ Failed to parse routine from document ${document.id}", e)
+                    }
+                }
+            } catch (e: Exception) {
+                AppLogger.Database.error("❌ Query by familyId failed: ${e.message}", e)
+                // Don't throw - continue with results from userId query
+            }
+        }
+        
+        AppLogger.Database.info("✅ Total routines found: ${allRoutines.size} (deduplicated from ${routineIds.size} unique IDs)")
+        
+        // Sort by updatedAt (ascending) to maintain order
+        return allRoutines.sortedBy { it.updatedAt }
     }
     
     /**

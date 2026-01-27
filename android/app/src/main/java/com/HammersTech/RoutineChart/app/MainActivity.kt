@@ -127,15 +127,23 @@ class MainViewModel @Inject constructor(
                         }
                         
                         // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+                        // Phase 3.3: Pull routines from Firestore (early implementation of Phase 3.8 background sync)
                         if (routineRepository is CompositeRoutineRepository) {
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                                 try {
+                                    // First, upload any unsynced local changes
                                     val uploaded = routineRepository.uploadUnsynced(existingUser.id, existingUser.familyId)
                                     if (uploaded > 0) {
                                         AppLogger.Database.info("✅ Uploaded $uploaded unsynced routine(s) on app launch")
                                     }
+                                    
+                                    // Then, pull any remote changes (this will also pull steps)
+                                    val pulled = routineRepository.pullRoutines(existingUser.id, existingUser.familyId)
+                                    if (pulled > 0) {
+                                        AppLogger.Database.info("✅ Pulled $pulled routine(s) from Firestore on app launch")
+                                    }
                                 } catch (e: Exception) {
-                                    AppLogger.Database.error("⚠️ Failed to upload unsynced routines: ${e.message}", e)
+                                    AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)
                                 }
                             }
                         }
@@ -179,15 +187,23 @@ class MainViewModel @Inject constructor(
                         }
                         
                         // Phase 3.2: Upload unsynced routines (early implementation of Phase 3.8 background sync)
+                        // Phase 3.3: Pull routines from Firestore (early implementation of Phase 3.8 background sync)
                         if (routineRepository is CompositeRoutineRepository) {
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                                 try {
+                                    // First, upload any unsynced local changes
                                     val uploaded = routineRepository.uploadUnsynced(newUser.id, newUser.familyId)
                                     if (uploaded > 0) {
                                         AppLogger.Database.info("✅ Uploaded $uploaded unsynced routine(s) on app launch")
                                     }
+                                    
+                                    // Then, pull any remote changes (this will also pull steps)
+                                    val pulled = routineRepository.pullRoutines(newUser.id, newUser.familyId)
+                                    if (pulled > 0) {
+                                        AppLogger.Database.info("✅ Pulled $pulled routine(s) from Firestore on app launch")
+                                    }
                                 } catch (e: Exception) {
-                                    AppLogger.Database.error("⚠️ Failed to upload unsynced routines: ${e.message}", e)
+                                    AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)
                                 }
                             }
                         }

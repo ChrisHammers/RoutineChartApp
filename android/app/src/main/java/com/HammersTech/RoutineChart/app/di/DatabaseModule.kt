@@ -36,7 +36,8 @@ object DatabaseModule {
             .addMigrations(
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_2_3,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_3_4,
-                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_4_5
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_4_5,
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_5_6
             )
             .fallbackToDestructiveMigration() // Phase 1: Dev only - remove in production
             .build()

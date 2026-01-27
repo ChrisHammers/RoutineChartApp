@@ -57,7 +57,7 @@ class ParentDashboardViewModel @Inject constructor(
                 }
 
                 // Load routines (exclude deleted) for the user's family
-                val allRoutines = routineRepository.getByFamilyId(user.familyId)
+                val allRoutines = routineRepository.getAll(user.id, user.familyId, includeDeleted = false)
                 val activeRoutines = allRoutines.filter { it.deletedAt == null }
                     .sortedBy { it.createdAt }
 

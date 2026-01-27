@@ -28,7 +28,8 @@ data class RoutineStepEntity(
     val iconName: String?,
     val audioCueUrl: String?,
     val createdAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
+    val synced: Boolean = false // Phase 3.4: Upload queue - tracks if synced to Firestore
 ) {
     fun toDomain(): RoutineStep = RoutineStep(
         id = id,
@@ -42,7 +43,7 @@ data class RoutineStepEntity(
     )
 
     companion object {
-        fun fromDomain(step: RoutineStep): RoutineStepEntity = RoutineStepEntity(
+        fun fromDomain(step: RoutineStep, synced: Boolean = false): RoutineStepEntity = RoutineStepEntity(
             id = step.id,
             routineId = step.routineId,
             orderIndex = step.orderIndex,
@@ -50,7 +51,8 @@ data class RoutineStepEntity(
             iconName = step.iconName,
             audioCueUrl = step.audioCueUrl,
             createdAt = step.createdAt,
-            deletedAt = step.deletedAt
+            deletedAt = step.deletedAt,
+            synced = synced
         )
     }
 }

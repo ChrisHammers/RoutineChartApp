@@ -35,8 +35,8 @@ class RoomRoutineRepository @Inject constructor(
         return routineDao.observeById(id).map { it?.toDomain() }
     }
 
-    override suspend fun getByFamilyId(familyId: String): List<Routine> {
-        return routineDao.getByFamilyId(familyId).map { it.toDomain() }
+    override suspend fun getAll(userId: String, familyId: String?, includeDeleted: Boolean): List<Routine> {
+        return routineDao.getAll(userId, familyId, includeDeleted).map { it.toDomain() }
     }
 
     override fun observeByFamilyId(familyId: String): Flow<List<Routine>> {

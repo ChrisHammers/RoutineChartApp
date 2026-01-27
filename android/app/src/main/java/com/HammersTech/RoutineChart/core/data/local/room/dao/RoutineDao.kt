@@ -28,6 +28,15 @@ interface RoutineDao {
     @Query("SELECT * FROM routines WHERE familyId = :familyId AND deletedAt IS NULL")
     fun observeByFamilyId(familyId: String): Flow<List<RoutineEntity>>
 
+    // Phase 3.3: Query by userId OR familyId (if provided)
+    @Query("""
+        SELECT * FROM routines 
+        WHERE (userId = :userId OR (:familyId IS NOT NULL AND familyId = :familyId))
+        AND (:includeDeleted = 1 OR deletedAt IS NULL)
+        ORDER BY createdAt DESC
+    """)
+    suspend fun getAll(userId: String, familyId: String?, includeDeleted: Boolean): List<RoutineEntity>
+
     // Phase 3.2: Upload Queue - Get unsynced routines
     // Query by familyId if provided, otherwise by userId
     @Query("""
