@@ -115,7 +115,12 @@ class CompositeRoutineRepository @Inject constructor(
         AppLogger.Database.info("📥 Time difference: ${java.time.Duration.between(lastSyncedAt, Instant.now()).seconds} seconds")
         
         // 2. Query Firestore for routines updated since lastSyncedAt
-        var remoteRoutines = syncService.getRoutinesUpdatedSince(userId, familyId, lastSyncedAt)
+        var remoteRoutines = try {
+            syncService.getRoutinesUpdatedSince(userId, familyId, lastSyncedAt)
+        } catch (e: Exception) {
+            AppLogger.Database.error("❌ Failed to query Firestore: ${e.message}", e)
+            emptyList()
+        }
         
         // If no routines found but cursor exists, check if local database is empty
         // This handles the case where routines exist in Firestore but have older updatedAt timestamps
@@ -127,12 +132,32 @@ class CompositeRoutineRepository @Inject constructor(
             // If local is empty, try pulling ALL routines (ignore updatedAt filter)
             if (localRoutines.isEmpty()) {
                 AppLogger.Database.info("🔄 Local database is empty - pulling ALL routines from Firestore (ignoring updatedAt filter)")
-                remoteRoutines = syncService.getRoutinesUpdatedSince(
-                    userId,
-                    familyId,
-                    Instant.ofEpochSecond(0) // Use epoch to get all routines
-                )
+                remoteRoutines = try {
+                    syncService.getRoutinesUpdatedSince(
+                        userId,
+                        familyId,
+                        Instant.ofEpochSecond(0) // Use epoch to get all routines
+                    )
+                } catch (e: Exception) {
+                    AppLogger.Database.error("❌ Failed to pull all routines: ${e.message}", e)
+                    emptyList()
+                }
                 AppLogger.Database.info("📥 Found ${remoteRoutines.size} routine(s) when pulling all routines")
+            } else {
+                // Local has routines but pull found none - this might mean routines in Firestore have older updatedAt
+                // Try pulling with epoch anyway to be safe
+                AppLogger.Database.info("🔄 Local has routines but pull found none - trying to pull ALL routines anyway")
+                remoteRoutines = try {
+                    syncService.getRoutinesUpdatedSince(
+                        userId,
+                        familyId,
+                        Instant.ofEpochSecond(0) // Use epoch to get all routines
+                    )
+                } catch (e: Exception) {
+                    AppLogger.Database.error("❌ Failed to pull all routines: ${e.message}", e)
+                    emptyList()
+                }
+                AppLogger.Database.info("📥 Found ${remoteRoutines.size} routine(s) when pulling all routines (fallback)")
             }
         }
         

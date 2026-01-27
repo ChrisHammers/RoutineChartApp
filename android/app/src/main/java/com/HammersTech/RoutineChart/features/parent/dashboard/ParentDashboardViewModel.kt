@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Routine
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
@@ -56,7 +57,28 @@ class ParentDashboardViewModel @Inject constructor(
                     return@launch
                 }
 
-                // Load routines (exclude deleted) for the user's family
+                // CRITICAL: Pull routines from Firestore BEFORE loading from local
+                // This ensures we have the latest data when the UI loads
+                if (routineRepository is CompositeRoutineRepository) {
+                    try {
+                        // First, upload any unsynced local changes
+                        val uploaded = routineRepository.uploadUnsynced(user.id, user.familyId)
+                        if (uploaded > 0) {
+                            AppLogger.UI.info("✅ Uploaded $uploaded unsynced routine(s) before loading dashboard")
+                        }
+                        
+                        // Then, pull any remote changes (this will also pull steps)
+                        val pulled = routineRepository.pullRoutines(user.id, user.familyId)
+                        if (pulled > 0) {
+                            AppLogger.UI.info("✅ Pulled $pulled routine(s) from Firestore before loading dashboard")
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.UI.error("⚠️ Failed to sync routines before loading dashboard: ${e.message}", e)
+                        // Continue loading local data even if sync fails
+                    }
+                }
+
+                // Load routines (exclude deleted) for the user (by userId, optionally filtered by familyId)
                 val allRoutines = routineRepository.getAll(user.id, user.familyId, includeDeleted = false)
                 val activeRoutines = allRoutines.filter { it.deletedAt == null }
                     .sortedBy { it.createdAt }

@@ -48,7 +48,8 @@ fun RoutineBuilderScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(routine) {
+    // Use a key that includes both routine and a unique identifier to force reset
+    LaunchedEffect(routine?.id ?: "new") {
         viewModel.initialize(routine)
     }
 
@@ -66,7 +67,7 @@ fun RoutineBuilderScreen(
                 actions = {
                     TextButton(
                         onClick = { viewModel.save(onSuccess = onDismiss) },
-                        enabled = viewModel.canSave() && !state.isSaving
+                        enabled = state.canSave && !state.isSaving
                     ) {
                         Text("Save")
                     }

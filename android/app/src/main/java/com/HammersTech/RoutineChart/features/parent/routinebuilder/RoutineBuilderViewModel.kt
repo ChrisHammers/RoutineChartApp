@@ -71,24 +71,30 @@ class RoutineBuilderViewModel @Inject constructor(
                     val assignments = routineAssignmentRepository.getByRoutineId(routine.id)
                     val selectedChildIds = assignments.filter { it.isActive }.map { it.childId }.toSet()
 
-                    _state.update {
-                        it.copy(
-                            familyId = familyId,
-                            existingRoutine = routine,
-                            title = routine.title,
-                            iconName = routine.iconName ?: "📋",
-                            steps = steps,
-                            children = children,
-                            selectedChildIds = selectedChildIds
-                        )
-                    }
+                    val updatedState = RoutineBuilderState(
+                        familyId = familyId,
+                        existingRoutine = routine,
+                        title = routine.title,
+                        iconName = routine.iconName ?: "📋",
+                        steps = steps,
+                        children = children,
+                        selectedChildIds = selectedChildIds,
+                        canSave = false // Will be computed
+                    )
+                    _state.update { updatedState.copy(canSave = computeCanSave(updatedState)) }
                 } else {
-                    _state.update {
-                        it.copy(
-                            familyId = familyId,
-                            children = children
-                        )
-                    }
+                    // Creating new routine - reset all fields
+                    val newState = RoutineBuilderState(
+                        familyId = familyId,
+                        existingRoutine = null,
+                        title = "",
+                        iconName = "📋",
+                        steps = emptyList(),
+                        children = children,
+                        selectedChildIds = emptySet(),
+                        canSave = false
+                    )
+                    _state.update { newState }
                 }
 
                 AppLogger.UI.info("Initialized routine builder with ${children.size} children")
@@ -100,7 +106,10 @@ class RoutineBuilderViewModel @Inject constructor(
     }
 
     fun updateTitle(title: String) {
-        _state.update { it.copy(title = title) }
+        _state.update { state ->
+            val updated = state.copy(title = title)
+            updated.copy(canSave = computeCanSave(updated))
+        }
     }
 
     fun updateIconName(iconName: String) {
@@ -110,18 +119,27 @@ class RoutineBuilderViewModel @Inject constructor(
     fun updateStep(index: Int, label: String, iconName: String) {
         val updatedSteps = _state.value.steps.toMutableList()
         updatedSteps[index] = StepInput(label, iconName)
-        _state.update { it.copy(steps = updatedSteps) }
+        _state.update { state ->
+            val updated = state.copy(steps = updatedSteps)
+            updated.copy(canSave = computeCanSave(updated))
+        }
     }
 
     fun addStep() {
         val updatedSteps = _state.value.steps + StepInput("", "⚪️")
-        _state.update { it.copy(steps = updatedSteps) }
+        _state.update { state ->
+            val updated = state.copy(steps = updatedSteps)
+            updated.copy(canSave = computeCanSave(updated))
+        }
     }
 
     fun removeStep(index: Int) {
         val updatedSteps = _state.value.steps.toMutableList()
         updatedSteps.removeAt(index)
-        _state.update { it.copy(steps = updatedSteps) }
+        _state.update { state ->
+            val updated = state.copy(steps = updatedSteps)
+            updated.copy(canSave = computeCanSave(updated))
+        }
     }
 
     fun moveStep(from: Int, to: Int) {
@@ -142,9 +160,26 @@ class RoutineBuilderViewModel @Inject constructor(
     }
 
     fun canSave(): Boolean {
-        return _state.value.title.isNotBlank() &&
-                _state.value.steps.isNotEmpty() &&
-                _state.value.steps.all { it.label.isNotBlank() }
+        return _state.value.canSave
+    }
+    
+    private fun computeCanSave(state: RoutineBuilderState): Boolean {
+        val hasTitle = state.title.isNotBlank()
+        val hasSteps = state.steps.isNotEmpty()
+        // Require ALL steps to have non-blank text
+        val allStepsHaveText = state.steps.all { it.label.isNotBlank() }
+        
+        val canSaveResult = hasTitle && hasSteps && allStepsHaveText
+        
+        // Log validation for debugging (only when it changes or fails)
+        if (!canSaveResult) {
+            AppLogger.UI.info("computeCanSave() failed: hasTitle=$hasTitle, hasSteps=$hasSteps, allStepsHaveText=$allStepsHaveText, totalSteps=${state.steps.size}")
+            state.steps.forEachIndexed { index, step ->
+                AppLogger.UI.info("  Step $index: label='${step.label}', iconName='${step.iconName}'")
+            }
+        }
+        
+        return canSaveResult
     }
 
     fun save(onSuccess: () -> Unit) {
@@ -203,6 +238,7 @@ class RoutineBuilderViewModel @Inject constructor(
                         return@launch
                     }
                     
+                    // canSave() already ensures all steps have text, so we can use all steps
                     routine = createRoutineUseCase(
                         userId = authUser.id,
                         familyId = familyId, // Optional - if nil, routine is personal
@@ -278,7 +314,8 @@ data class RoutineBuilderState(
     val children: List<ChildProfile> = emptyList(),
     val selectedChildIds: Set<String> = emptySet(),
     val isSaving: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val canSave: Boolean = false // Computed from title and steps
 )
 
 data class StepInput(
