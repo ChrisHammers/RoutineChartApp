@@ -1,7 +1,6 @@
 package com.HammersTech.RoutineChart.core.data.local.room.entities
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.HammersTech.RoutineChart.core.domain.models.CompletionRule
@@ -10,14 +9,8 @@ import java.time.Instant
 
 @Entity(
     tableName = "routines",
-    foreignKeys = [
-        ForeignKey(
-            entity = FamilyEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
+    // Note: No foreign key constraint on familyId to allow routines to reference families
+    // that don't exist locally yet (e.g., when pulling from Firestore)
     indices = [Index("userId"), Index("familyId"), Index("synced")]
 )
 data class RoutineEntity(
