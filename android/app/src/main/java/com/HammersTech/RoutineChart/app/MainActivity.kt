@@ -30,6 +30,7 @@ import com.HammersTech.RoutineChart.core.domain.models.Role
 import com.HammersTech.RoutineChart.core.domain.models.User
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeUserRepository
+import com.HammersTech.RoutineChart.core.data.local.SeedDataManager
 import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
@@ -84,7 +85,8 @@ class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository,
     private val familyRepository: FamilyRepository,
-    private val routineRepository: RoutineRepository
+    private val routineRepository: RoutineRepository,
+    private val seedDataManager: SeedDataManager
 ) : ViewModel() {
     val authState: StateFlow<com.HammersTech.RoutineChart.core.domain.models.AuthUser?> = 
         authRepository.authStateFlow.stateIn(
@@ -141,6 +143,13 @@ class MainViewModel @Inject constructor(
                                     val pulled = routineRepository.pullRoutines(existingUser.id, existingUser.familyId)
                                     if (pulled > 0) {
                                         AppLogger.Database.info("✅ Pulled $pulled routine(s) from Firestore on app launch")
+                                    }
+                                    
+                                    // Option B: Seed after sync - only when user has no routines; seed into current family so routines sync to cloud
+                                    seedDataManager.seedDataIfNeeded(existingUser.id, existingUser.familyId)
+                                    val uploadedAfterSeed = routineRepository.uploadUnsynced(existingUser.id, existingUser.familyId)
+                                    if (uploadedAfterSeed > 0) {
+                                        AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
                                     }
                                 } catch (e: Exception) {
                                     AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)
@@ -201,6 +210,13 @@ class MainViewModel @Inject constructor(
                                     val pulled = routineRepository.pullRoutines(newUser.id, newUser.familyId)
                                     if (pulled > 0) {
                                         AppLogger.Database.info("✅ Pulled $pulled routine(s) from Firestore on app launch")
+                                    }
+                                    
+                                    // Option B: Seed after sync - only when user has no routines; seed into current family so routines sync to cloud
+                                    seedDataManager.seedDataIfNeeded(newUser.id, newUser.familyId)
+                                    val uploadedAfterSeed = routineRepository.uploadUnsynced(newUser.id, newUser.familyId)
+                                    if (uploadedAfterSeed > 0) {
+                                        AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
                                     }
                                 } catch (e: Exception) {
                                     AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)

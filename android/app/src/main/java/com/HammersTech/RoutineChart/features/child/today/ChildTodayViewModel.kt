@@ -2,7 +2,6 @@ package com.HammersTech.RoutineChart.features.child.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.HammersTech.RoutineChart.core.data.local.SeedDataManager
 import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Routine
 import com.HammersTech.RoutineChart.core.domain.models.RoutineStep
@@ -32,7 +31,6 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class ChildTodayViewModel @Inject constructor(
-    private val seedDataManager: SeedDataManager,
     private val familyRepository: FamilyRepository,
     private val childProfileRepository: ChildProfileRepository,
     private val routineRepository: RoutineRepository,
@@ -62,15 +60,7 @@ class ChildTodayViewModel @Inject constructor(
                 AppLogger.UI.info("Initializing data...")
                 _state.update { it.copy(isLoading = true) }
 
-                // Seed data if needed
-                // Get current authenticated user ID for seeding
-                val authUser = authRepository.currentUser
-                if (authUser != null) {
-                    AppLogger.UI.info("Seeding data if needed...")
-                    seedDataManager.seedDataIfNeeded(authUser.id)
-                } else {
-                    AppLogger.UI.error("No authenticated user, skipping seed data")
-                }
+                // Seed runs after sync in MainViewModel (Option B) so routines sync to cloud
 
                 // Get device ID
                 AppLogger.UI.info("Getting device ID...")
