@@ -12,39 +12,40 @@ import javax.inject.Inject
 /**
  * Room implementation of RoutineAssignmentRepository
  */
-class RoomRoutineAssignmentRepository @Inject constructor(
-    private val routineAssignmentDao: RoutineAssignmentDao
-) : RoutineAssignmentRepository {
-    override suspend fun create(assignment: RoutineAssignment) {
-        routineAssignmentDao.insert(RoutineAssignmentEntity.fromDomain(assignment))
-        AppLogger.Database.info("Created routine assignment: ${assignment.id}")
-    }
+class RoomRoutineAssignmentRepository
+    @Inject
+    constructor(
+        private val routineAssignmentDao: RoutineAssignmentDao,
+    ) : RoutineAssignmentRepository {
+        override suspend fun create(assignment: RoutineAssignment) {
+            routineAssignmentDao.insert(RoutineAssignmentEntity.fromDomain(assignment))
+            AppLogger.Database.info("Created routine assignment: ${assignment.id}")
+        }
 
-    override suspend fun update(assignment: RoutineAssignment) {
-        routineAssignmentDao.update(RoutineAssignmentEntity.fromDomain(assignment))
-        AppLogger.Database.info("Updated routine assignment: ${assignment.id}")
-    }
+        override suspend fun update(assignment: RoutineAssignment) {
+            routineAssignmentDao.update(RoutineAssignmentEntity.fromDomain(assignment))
+            AppLogger.Database.info("Updated routine assignment: ${assignment.id}")
+        }
 
-    override suspend fun getById(id: String): RoutineAssignment? {
-        return routineAssignmentDao.getById(id)?.toDomain()
-    }
+        override suspend fun getById(id: String): RoutineAssignment? {
+            return routineAssignmentDao.getById(id)?.toDomain()
+        }
 
-    override suspend fun getByFamilyId(familyId: String): List<RoutineAssignment> {
-        return routineAssignmentDao.getByFamilyId(familyId).map { it.toDomain() }
-    }
+        override suspend fun getByFamilyId(familyId: String): List<RoutineAssignment> {
+            return routineAssignmentDao.getByFamilyId(familyId).map { it.toDomain() }
+        }
 
-    override suspend fun getActiveByChildId(childId: String): List<RoutineAssignment> {
-        return routineAssignmentDao.getActiveByChildId(childId).map { it.toDomain() }
-    }
+        override suspend fun getActiveByChildId(childId: String): List<RoutineAssignment> {
+            return routineAssignmentDao.getActiveByChildId(childId).map { it.toDomain() }
+        }
 
-    override fun observeActiveByChildId(childId: String): Flow<List<RoutineAssignment>> {
-        return routineAssignmentDao.observeActiveByChildId(childId).map { list ->
-            list.map { it.toDomain() }
+        override fun observeActiveByChildId(childId: String): Flow<List<RoutineAssignment>> {
+            return routineAssignmentDao.observeActiveByChildId(childId).map { list ->
+                list.map { it.toDomain() }
+            }
+        }
+
+        override suspend fun getByRoutineId(routineId: String): List<RoutineAssignment> {
+            return routineAssignmentDao.getByRoutineId(routineId).map { it.toDomain() }
         }
     }
-
-    override suspend fun getByRoutineId(routineId: String): List<RoutineAssignment> {
-        return routineAssignmentDao.getByRoutineId(routineId).map { it.toDomain() }
-    }
-}
-

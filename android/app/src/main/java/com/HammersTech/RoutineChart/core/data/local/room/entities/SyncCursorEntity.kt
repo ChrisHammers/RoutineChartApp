@@ -13,22 +13,25 @@ data class SyncCursorEntity(
     @PrimaryKey
     val id: String, // collection name (e.g., "routines", "events")
     val collection: String,
-    val lastSyncedAt: Instant
+    val lastSyncedAt: Instant,
 ) {
     companion object {
-        fun fromDomain(collection: String, lastSyncedAt: Instant): SyncCursorEntity {
+        fun fromDomain(
+            collection: String,
+            lastSyncedAt: Instant,
+        ): SyncCursorEntity {
             return SyncCursorEntity(
                 id = collection,
                 collection = collection,
-                lastSyncedAt = lastSyncedAt
+                lastSyncedAt = lastSyncedAt,
             )
         }
     }
-    
+
     fun toDomain(): com.HammersTech.RoutineChart.core.domain.models.SyncCursor {
         return com.HammersTech.RoutineChart.core.domain.models.SyncCursor(
             collection = collection,
-            lastSyncedAt = lastSyncedAt
+            lastSyncedAt = lastSyncedAt,
         )
     }
 }

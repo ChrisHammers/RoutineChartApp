@@ -12,35 +12,36 @@ import javax.inject.Inject
 /**
  * Room implementation of ChildProfileRepository
  */
-class RoomChildProfileRepository @Inject constructor(
-    private val childProfileDao: ChildProfileDao
-) : ChildProfileRepository {
-    override suspend fun create(profile: ChildProfile) {
-        childProfileDao.insert(ChildProfileEntity.fromDomain(profile))
-        AppLogger.Database.info("Created child profile: ${profile.id}")
-    }
+class RoomChildProfileRepository
+    @Inject
+    constructor(
+        private val childProfileDao: ChildProfileDao,
+    ) : ChildProfileRepository {
+        override suspend fun create(profile: ChildProfile) {
+            childProfileDao.insert(ChildProfileEntity.fromDomain(profile))
+            AppLogger.Database.info("Created child profile: ${profile.id}")
+        }
 
-    override suspend fun update(profile: ChildProfile) {
-        childProfileDao.update(ChildProfileEntity.fromDomain(profile))
-        AppLogger.Database.info("Updated child profile: ${profile.id}")
-    }
+        override suspend fun update(profile: ChildProfile) {
+            childProfileDao.update(ChildProfileEntity.fromDomain(profile))
+            AppLogger.Database.info("Updated child profile: ${profile.id}")
+        }
 
-    override suspend fun getById(id: String): ChildProfile? {
-        return childProfileDao.getById(id)?.toDomain()
-    }
+        override suspend fun getById(id: String): ChildProfile? {
+            return childProfileDao.getById(id)?.toDomain()
+        }
 
-    override fun observeById(id: String): Flow<ChildProfile?> {
-        return childProfileDao.observeById(id).map { it?.toDomain() }
-    }
+        override fun observeById(id: String): Flow<ChildProfile?> {
+            return childProfileDao.observeById(id).map { it?.toDomain() }
+        }
 
-    override suspend fun getByFamilyId(familyId: String): List<ChildProfile> {
-        return childProfileDao.getByFamilyId(familyId).map { it.toDomain() }
-    }
+        override suspend fun getByFamilyId(familyId: String): List<ChildProfile> {
+            return childProfileDao.getByFamilyId(familyId).map { it.toDomain() }
+        }
 
-    override fun observeByFamilyId(familyId: String): Flow<List<ChildProfile>> {
-        return childProfileDao.observeByFamilyId(familyId).map { list ->
-            list.map { it.toDomain() }
+        override fun observeByFamilyId(familyId: String): Flow<List<ChildProfile>> {
+            return childProfileDao.observeByFamilyId(familyId).map { list ->
+                list.map { it.toDomain() }
+            }
         }
     }
-}
-

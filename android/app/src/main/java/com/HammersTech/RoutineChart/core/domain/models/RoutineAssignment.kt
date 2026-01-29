@@ -13,7 +13,7 @@ data class RoutineAssignment(
     val childId: String,
     val isActive: Boolean,
     val assignedAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
 ) {
     companion object {
         const val DEFAULT_IS_ACTIVE = true
@@ -22,4 +22,3 @@ data class RoutineAssignment(
     val isDeleted: Boolean
         get() = deletedAt != null
 }
-

@@ -15,4 +15,3 @@ object ULIDGenerator {
         return ULID.random()
     }
 }
-

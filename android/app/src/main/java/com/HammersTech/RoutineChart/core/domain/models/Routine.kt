@@ -17,7 +17,7 @@ data class Routine(
     val completionRule: CompletionRule,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
 ) {
     companion object {
         const val DEFAULT_VERSION = 1
@@ -26,4 +26,3 @@ data class Routine(
     val isDeleted: Boolean
         get() = deletedAt != null
 }
-

@@ -46,13 +46,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
-import com.HammersTech.RoutineChart.features.settings.SettingsScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChildTodayScreen(
-    viewModel: ChildTodayViewModel = hiltViewModel()
-) {
+fun ChildTodayScreen(viewModel: ChildTodayViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     var showSettings by remember { mutableStateOf(false) }
 
@@ -64,30 +61,31 @@ fun ChildTodayScreen(
                     IconButton(onClick = { showSettings = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings"
+                            contentDescription = "Settings",
                         )
                     }
                     IconButton(onClick = { viewModel.signOut() }) {
                         Icon(
                             imageVector = Icons.Default.Logout,
-                            contentDescription = "Sign Out"
+                            contentDescription = "Sign Out",
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when {
                 state.isLoading -> {
                     Text(
                         text = "Loading...",
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
 
@@ -95,7 +93,7 @@ fun ChildTodayScreen(
                     Text(
                         text = "Error: ${state.error}",
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier.align(Alignment.Center),
                     )
                 }
 
@@ -103,7 +101,7 @@ fun ChildTodayScreen(
                     ChildTodayContent(
                         state = state,
                         onChildSelected = viewModel::selectChild,
-                        onStepToggled = viewModel::toggleStep
+                        onStepToggled = viewModel::toggleStep,
                     )
                 }
             }
@@ -115,17 +113,18 @@ fun ChildTodayScreen(
 fun ChildTodayContent(
     state: ChildTodayState,
     onChildSelected: (ChildProfile) -> Unit,
-    onStepToggled: (String, String) -> Unit
+    onStepToggled: (String, String) -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
     ) {
         // Child selector
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             state.children.forEach { child ->
                 FilterChip(
@@ -137,7 +136,7 @@ fun ChildTodayContent(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(child.displayName)
                         }
-                    }
+                    },
                 )
             }
         }
@@ -146,12 +145,12 @@ fun ChildTodayContent(
 
         // Routines list
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(state.routines) { routineWithSteps ->
                 RoutineCard(
                     routineWithSteps = routineWithSteps,
-                    onStepToggled = onStepToggled
+                    onStepToggled = onStepToggled,
                 )
             }
         }
@@ -161,32 +160,32 @@ fun ChildTodayContent(
 @Composable
 fun RoutineCard(
     routineWithSteps: RoutineWithSteps,
-    onStepToggled: (String, String) -> Unit
+    onStepToggled: (String, String) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
         ) {
             // Routine header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = routineWithSteps.routine.iconName ?: "📋",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = routineWithSteps.routine.title,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
@@ -196,11 +195,12 @@ fun RoutineCard(
                 Text(
                     text = "$completedCount/$totalCount",
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (routineWithSteps.isRoutineComplete) {
-                        Color(0xFF4CAF50)
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    color =
+                        if (routineWithSteps.isRoutineComplete) {
+                            Color(0xFF4CAF50)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
 
@@ -214,7 +214,7 @@ fun RoutineCard(
                     isComplete = isComplete,
                     onClick = {
                         onStepToggled(routineWithSteps.routine.id, step.id)
-                    }
+                    },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -226,31 +226,33 @@ fun RoutineCard(
 fun StepRow(
     step: com.HammersTech.RoutineChart.core.domain.models.RoutineStep,
     isComplete: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Checkbox
         Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(
-                    if (isComplete) Color(0xFF4CAF50) else Color.LightGray
-                ),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isComplete) Color(0xFF4CAF50) else Color.LightGray,
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
             if (isComplete) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Complete",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -261,20 +263,20 @@ fun StepRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = step.iconName ?: "⚪",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = step.label ?: "Step ${step.orderIndex + 1}",
                 style = MaterialTheme.typography.bodyLarge,
                 textDecoration = if (isComplete) TextDecoration.LineThrough else null,
-                color = if (isComplete) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
+                color =
+                    if (isComplete) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
             )
         }
     }
 }
-

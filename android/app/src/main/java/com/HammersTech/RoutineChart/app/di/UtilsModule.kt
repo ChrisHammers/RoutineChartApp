@@ -17,8 +17,9 @@ import javax.inject.Singleton
 object UtilsModule {
     @Provides
     @Singleton
-    fun provideDeviceIdentifier(@ApplicationContext context: Context): DeviceIdentifier {
+    fun provideDeviceIdentifier(
+        @ApplicationContext context: Context,
+    ): DeviceIdentifier {
         return DeviceIdentifier(context)
     }
 }
-

@@ -14,22 +14,22 @@ import java.time.Instant
             entity = FamilyEntity::class,
             parentColumns = ["id"],
             childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = RoutineEntity::class,
             parentColumns = ["id"],
             childColumns = ["routineId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = ChildProfileEntity::class,
             parentColumns = ["id"],
             childColumns = ["childId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("familyId"), Index("routineId"), Index("childId")]
+    indices = [Index("familyId"), Index("routineId"), Index("childId")],
 )
 data class RoutineAssignmentEntity(
     @PrimaryKey
@@ -39,28 +39,29 @@ data class RoutineAssignmentEntity(
     val childId: String,
     val isActive: Boolean,
     val assignedAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
 ) {
-    fun toDomain(): RoutineAssignment = RoutineAssignment(
-        id = id,
-        familyId = familyId,
-        routineId = routineId,
-        childId = childId,
-        isActive = isActive,
-        assignedAt = assignedAt,
-        deletedAt = deletedAt
-    )
+    fun toDomain(): RoutineAssignment =
+        RoutineAssignment(
+            id = id,
+            familyId = familyId,
+            routineId = routineId,
+            childId = childId,
+            isActive = isActive,
+            assignedAt = assignedAt,
+            deletedAt = deletedAt,
+        )
 
     companion object {
-        fun fromDomain(assignment: RoutineAssignment): RoutineAssignmentEntity = RoutineAssignmentEntity(
-            id = assignment.id,
-            familyId = assignment.familyId,
-            routineId = assignment.routineId,
-            childId = assignment.childId,
-            isActive = assignment.isActive,
-            assignedAt = assignment.assignedAt,
-            deletedAt = assignment.deletedAt
-        )
+        fun fromDomain(assignment: RoutineAssignment): RoutineAssignmentEntity =
+            RoutineAssignmentEntity(
+                id = assignment.id,
+                familyId = assignment.familyId,
+                routineId = assignment.routineId,
+                childId = assignment.childId,
+                isActive = assignment.isActive,
+                assignedAt = assignment.assignedAt,
+                deletedAt = assignment.deletedAt,
+            )
     }
 }
-

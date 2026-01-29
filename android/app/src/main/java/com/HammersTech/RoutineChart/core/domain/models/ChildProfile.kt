@@ -14,10 +14,9 @@ data class ChildProfile(
     val ageBand: AgeBand,
     val readingMode: ReadingMode,
     val audioEnabled: Boolean,
-    val createdAt: Instant
+    val createdAt: Instant,
 ) {
     companion object {
         const val DEFAULT_AUDIO_ENABLED = true
     }
 }
-

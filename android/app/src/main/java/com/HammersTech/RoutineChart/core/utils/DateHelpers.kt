@@ -17,7 +17,10 @@ object DateHelpers {
      * @param timeZone IANA timezone string (e.g., "America/Los_Angeles")
      * @return Local day key string (e.g., "2026-01-05")
      */
-    fun localDayKey(instant: Instant, timeZone: String): String {
+    fun localDayKey(
+        instant: Instant,
+        timeZone: String,
+    ): String {
         val zoneId = ZoneId.of(timeZone)
         val localDate = instant.atZone(zoneId).toLocalDate()
         return localDate.format(DAY_KEY_FORMATTER)
@@ -41,4 +44,3 @@ object DateHelpers {
         return LocalDate.parse(dayKey, DAY_KEY_FORMATTER)
     }
 }
-

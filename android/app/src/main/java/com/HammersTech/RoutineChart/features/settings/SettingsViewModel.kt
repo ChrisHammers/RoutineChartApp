@@ -25,82 +25,88 @@ import javax.inject.Inject
  * Phase 2.3: User Linking
  */
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
-    private val userRepository: UserRepository,
-    private val childProfileRepository: ChildProfileRepository
-) : ViewModel() {
-    
-    data class UiState(
-        val currentUser: User? = null,
-        val isCreatingTestData: Boolean = false,
-        val testDataMessage: String? = null
-    )
-    
-    private val _state = MutableStateFlow(UiState())
-    val state: StateFlow<UiState> = _state.asStateFlow()
-    
-    init {
-        loadCurrentUser()
-    }
-    
-    private fun loadCurrentUser() {
-        viewModelScope.launch {
-            val authUser = authRepository.currentUser
-            if (authUser != null) {
-                val user = userRepository.getById(authUser.id)
-                _state.update { it.copy(currentUser = user) }
-            }
-        }
-    }
-    
-    fun createTestChildren() {
-        viewModelScope.launch {
-            val user = _state.value.currentUser
-            if (user == null || user.role != Role.PARENT) {
-                return@launch
-            }
-            
-            _state.update { it.copy(isCreatingTestData = true, testDataMessage = null) }
-            
-            try {
-                val child1 = ChildProfile(
-                    id = ULIDGenerator.generate(),
-                    familyId = user.familyId,
-                    displayName = "Emma",
-                    avatarIcon = "🌟",
-                    ageBand = AgeBand.AGE_5_7,
-                    readingMode = com.HammersTech.RoutineChart.core.domain.models.ReadingMode.LIGHT_TEXT,
-                    audioEnabled = true,
-                    createdAt = Instant.now()
-                )
-                childProfileRepository.create(child1)
-                
-                val child2 = ChildProfile(
-                    id = ULIDGenerator.generate(),
-                    familyId = user.familyId,
-                    displayName = "Noah",
-                    avatarIcon = "🚀",
-                    ageBand = AgeBand.AGE_8_10,
-                    readingMode = com.HammersTech.RoutineChart.core.domain.models.ReadingMode.FULL_TEXT,
-                    audioEnabled = true,
-                    createdAt = Instant.now()
-                )
-                childProfileRepository.create(child2)
-                
-                _state.update { it.copy(
-                    isCreatingTestData = false,
-                    testDataMessage = "Created Emma and Noah"
-                ) }
-                AppLogger.Database.info("Created test children for family: ${user.familyId}")
-            } catch (e: Exception) {
-                _state.update { it.copy(
-                    isCreatingTestData = false,
-                    testDataMessage = "Error: ${e.message}"
-                ) }
-                AppLogger.UI.error("Failed to create test children", e)
-            }
-        }
-    }
-}
+class SettingsViewModel
+    @Inject
+    constructor(
+        private val authRepository: AuthRepository,
+        private val userRepository: UserRepository,
+        private val childProfileRepository: ChildProfileRepository,
+    ) : ViewModel() {
+        data class UiState(
+            val currentUser: User? = null,
+            val isCreatingTestData: Boolean = false,
+            val testDataMessage: String? = null,
+        )
 
+        private val _state = MutableStateFlow(UiState())
+        val state: StateFlow<UiState> = _state.asStateFlow()
+
+        init {
+            loadCurrentUser()
+        }
+
+        private fun loadCurrentUser() {
+            viewModelScope.launch {
+                val authUser = authRepository.currentUser
+                if (authUser != null) {
+                    val user = userRepository.getById(authUser.id)
+                    _state.update { it.copy(currentUser = user) }
+                }
+            }
+        }
+
+        fun createTestChildren() {
+            viewModelScope.launch {
+                val user = _state.value.currentUser
+                if (user == null || user.role != Role.PARENT) {
+                    return@launch
+                }
+
+                _state.update { it.copy(isCreatingTestData = true, testDataMessage = null) }
+
+                try {
+                    val child1 =
+                        ChildProfile(
+                            id = ULIDGenerator.generate(),
+                            familyId = user.familyId,
+                            displayName = "Emma",
+                            avatarIcon = "🌟",
+                            ageBand = AgeBand.AGE_5_7,
+                            readingMode = com.HammersTech.RoutineChart.core.domain.models.ReadingMode.LIGHT_TEXT,
+                            audioEnabled = true,
+                            createdAt = Instant.now(),
+                        )
+                    childProfileRepository.create(child1)
+
+                    val child2 =
+                        ChildProfile(
+                            id = ULIDGenerator.generate(),
+                            familyId = user.familyId,
+                            displayName = "Noah",
+                            avatarIcon = "🚀",
+                            ageBand = AgeBand.AGE_8_10,
+                            readingMode = com.HammersTech.RoutineChart.core.domain.models.ReadingMode.FULL_TEXT,
+                            audioEnabled = true,
+                            createdAt = Instant.now(),
+                        )
+                    childProfileRepository.create(child2)
+
+                    _state.update {
+                        it.copy(
+                            isCreatingTestData = false,
+                            testDataMessage = "Created Emma and Noah",
+                        )
+                    }
+                    AppLogger.Database.info("Created test children for family: ${user.familyId}")
+                } catch (e: Exception) {
+                    _state.update {
+                        it.copy(
+                            isCreatingTestData = false,
+                            testDataMessage = "Error: ${e.message}",
+                        )
+                    }
+                    AppLogger.UI.error("Failed to create test children", e)
+                }
+            }
+        }
+    }

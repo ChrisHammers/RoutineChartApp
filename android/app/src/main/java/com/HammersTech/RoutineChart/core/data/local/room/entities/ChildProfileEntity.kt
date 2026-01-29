@@ -16,10 +16,10 @@ import java.time.Instant
             entity = FamilyEntity::class,
             parentColumns = ["id"],
             childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("familyId")]
+    indices = [Index("familyId")],
 )
 data class ChildProfileEntity(
     @PrimaryKey
@@ -30,30 +30,31 @@ data class ChildProfileEntity(
     val ageBand: AgeBand,
     val readingMode: ReadingMode,
     val audioEnabled: Boolean,
-    val createdAt: Instant
+    val createdAt: Instant,
 ) {
-    fun toDomain(): ChildProfile = ChildProfile(
-        id = id,
-        familyId = familyId,
-        displayName = displayName,
-        avatarIcon = avatarIcon,
-        ageBand = ageBand,
-        readingMode = readingMode,
-        audioEnabled = audioEnabled,
-        createdAt = createdAt
-    )
+    fun toDomain(): ChildProfile =
+        ChildProfile(
+            id = id,
+            familyId = familyId,
+            displayName = displayName,
+            avatarIcon = avatarIcon,
+            ageBand = ageBand,
+            readingMode = readingMode,
+            audioEnabled = audioEnabled,
+            createdAt = createdAt,
+        )
 
     companion object {
-        fun fromDomain(profile: ChildProfile): ChildProfileEntity = ChildProfileEntity(
-            id = profile.id,
-            familyId = profile.familyId,
-            displayName = profile.displayName,
-            avatarIcon = profile.avatarIcon,
-            ageBand = profile.ageBand,
-            readingMode = profile.readingMode,
-            audioEnabled = profile.audioEnabled,
-            createdAt = profile.createdAt
-        )
+        fun fromDomain(profile: ChildProfile): ChildProfileEntity =
+            ChildProfileEntity(
+                id = profile.id,
+                familyId = profile.familyId,
+                displayName = profile.displayName,
+                avatarIcon = profile.avatarIcon,
+                ageBand = profile.ageBand,
+                readingMode = profile.readingMode,
+                audioEnabled = profile.audioEnabled,
+                createdAt = profile.createdAt,
+            )
     }
 }
-

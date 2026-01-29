@@ -15,26 +15,26 @@ import java.time.Instant
             entity = FamilyEntity::class,
             parentColumns = ["id"],
             childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = ChildProfileEntity::class,
             parentColumns = ["id"],
             childColumns = ["childId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = RoutineEntity::class,
             parentColumns = ["id"],
             childColumns = ["routineId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
             entity = RoutineStepEntity::class,
             parentColumns = ["id"],
             childColumns = ["stepId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index("familyId"),
@@ -42,8 +42,8 @@ import java.time.Instant
         Index("routineId"),
         Index("stepId"),
         Index("localDayKey"),
-        Index("eventAt")
-    ]
+        Index("eventAt"),
+    ],
 )
 data class CompletionEventEntity(
     @PrimaryKey
@@ -56,34 +56,35 @@ data class CompletionEventEntity(
     val eventAt: Instant,
     val localDayKey: String,
     val deviceId: String,
-    val synced: Boolean = false
+    val synced: Boolean = false,
 ) {
-    fun toDomain(): CompletionEvent = CompletionEvent(
-        id = id,
-        familyId = familyId,
-        childId = childId,
-        routineId = routineId,
-        stepId = stepId,
-        eventType = eventType,
-        eventAt = eventAt,
-        localDayKey = localDayKey,
-        deviceId = deviceId,
-        synced = synced
-    )
+    fun toDomain(): CompletionEvent =
+        CompletionEvent(
+            id = id,
+            familyId = familyId,
+            childId = childId,
+            routineId = routineId,
+            stepId = stepId,
+            eventType = eventType,
+            eventAt = eventAt,
+            localDayKey = localDayKey,
+            deviceId = deviceId,
+            synced = synced,
+        )
 
     companion object {
-        fun fromDomain(event: CompletionEvent): CompletionEventEntity = CompletionEventEntity(
-            id = event.id,
-            familyId = event.familyId,
-            childId = event.childId,
-            routineId = event.routineId,
-            stepId = event.stepId,
-            eventType = event.eventType,
-            eventAt = event.eventAt,
-            localDayKey = event.localDayKey,
-            deviceId = event.deviceId,
-            synced = event.synced
-        )
+        fun fromDomain(event: CompletionEvent): CompletionEventEntity =
+            CompletionEventEntity(
+                id = event.id,
+                familyId = event.familyId,
+                childId = event.childId,
+                routineId = event.routineId,
+                stepId = event.stepId,
+                eventType = event.eventType,
+                eventAt = event.eventAt,
+                localDayKey = event.localDayKey,
+                deviceId = event.deviceId,
+                synced = event.synced,
+            )
     }
 }
-

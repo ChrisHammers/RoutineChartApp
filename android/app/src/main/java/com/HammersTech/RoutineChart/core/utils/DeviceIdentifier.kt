@@ -26,9 +26,10 @@ class DeviceIdentifier(private val context: Context) {
      * @return Persistent device ID (UUID)
      */
     suspend fun getDeviceId(): String {
-        val existingId = context.dataStore.data
-            .map { preferences -> preferences[DEVICE_ID_KEY] }
-            .first()
+        val existingId =
+            context.dataStore.data
+                .map { preferences -> preferences[DEVICE_ID_KEY] }
+                .first()
 
         if (existingId != null) {
             return existingId
@@ -43,4 +44,3 @@ class DeviceIdentifier(private val context: Context) {
         return newId
     }
 }
-

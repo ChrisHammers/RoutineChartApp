@@ -13,11 +13,10 @@ data class Family(
     val weekStartsOn: Int,
     val planTier: PlanTier,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
 ) {
     companion object {
         const val DEFAULT_TIMEZONE = "America/Los_Angeles"
         const val DEFAULT_WEEK_STARTS_ON = 0 // Sunday
     }
 }
-

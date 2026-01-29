@@ -31,4 +31,3 @@ interface RoutineAssignmentDao {
     @Query("SELECT * FROM routine_assignments WHERE routineId = :routineId AND deletedAt IS NULL")
     suspend fun getByRoutineId(routineId: String): List<RoutineAssignmentEntity>
 }
-

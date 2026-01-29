@@ -2,10 +2,7 @@ package com.HammersTech.RoutineChart.app.di
 
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomChildProfileRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomCompletionEventRepository
-import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyInviteRepository
-import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssignmentRepository
-import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStepRepository
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
@@ -31,31 +28,21 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindChildProfileRepository(
-        impl: RoomChildProfileRepository
-    ): ChildProfileRepository
+    abstract fun bindChildProfileRepository(impl: RoomChildProfileRepository): ChildProfileRepository
 
     @Binds
     @Singleton
-    abstract fun bindRoutineRepository(
-        impl: CompositeRoutineRepository
-    ): RoutineRepository
+    abstract fun bindRoutineRepository(impl: CompositeRoutineRepository): RoutineRepository
 
     @Binds
     @Singleton
-    abstract fun bindRoutineStepRepository(
-        impl: RoomRoutineStepRepository
-    ): RoutineStepRepository
+    abstract fun bindRoutineStepRepository(impl: RoomRoutineStepRepository): RoutineStepRepository
 
     @Binds
     @Singleton
-    abstract fun bindRoutineAssignmentRepository(
-        impl: RoomRoutineAssignmentRepository
-    ): RoutineAssignmentRepository
+    abstract fun bindRoutineAssignmentRepository(impl: RoomRoutineAssignmentRepository): RoutineAssignmentRepository
 
     @Binds
     @Singleton
-    abstract fun bindCompletionEventRepository(
-        impl: RoomCompletionEventRepository
-    ): CompletionEventRepository
+    abstract fun bindCompletionEventRepository(impl: RoomCompletionEventRepository): CompletionEventRepository
 }

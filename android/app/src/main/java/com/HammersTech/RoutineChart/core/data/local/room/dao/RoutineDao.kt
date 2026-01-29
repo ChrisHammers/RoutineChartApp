@@ -29,23 +29,34 @@ interface RoutineDao {
     fun observeByFamilyId(familyId: String): Flow<List<RoutineEntity>>
 
     // Phase 3.3: Query by userId OR familyId (if provided)
-    @Query("""
+    @Query(
+        """
         SELECT * FROM routines 
         WHERE (userId = :userId OR (:familyId IS NOT NULL AND familyId = :familyId))
         AND (:includeDeleted = 1 OR deletedAt IS NULL)
         ORDER BY createdAt DESC
-    """)
-    suspend fun getAll(userId: String, familyId: String?, includeDeleted: Boolean): List<RoutineEntity>
+    """,
+    )
+    suspend fun getAll(
+        userId: String,
+        familyId: String?,
+        includeDeleted: Boolean,
+    ): List<RoutineEntity>
 
     // Phase 3.2: Upload Queue - Get unsynced routines
     // Query by familyId if provided, otherwise by userId
-    @Query("""
+    @Query(
+        """
         SELECT * FROM routines 
         WHERE ((:familyId IS NOT NULL AND familyId = :familyId) OR (:familyId IS NULL AND userId = :userId))
         AND synced = 0 
         AND deletedAt IS NULL
-    """)
-    suspend fun getUnsynced(familyId: String?, userId: String): List<RoutineEntity>
+    """,
+    )
+    suspend fun getUnsynced(
+        familyId: String?,
+        userId: String,
+    ): List<RoutineEntity>
 
     // Phase 3.2: Upload Queue - Mark as synced
     @Query("UPDATE routines SET synced = 1 WHERE id = :routineId")
@@ -55,4 +66,3 @@ interface RoutineDao {
     @Query("UPDATE routines SET synced = 1 WHERE id IN (:routineIds)")
     suspend fun markAsSynced(routineIds: List<String>)
 }
-

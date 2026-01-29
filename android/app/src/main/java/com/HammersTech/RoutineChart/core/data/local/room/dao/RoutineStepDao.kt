@@ -37,4 +37,3 @@ interface RoutineStepDao {
     @Query("UPDATE routine_steps SET synced = 1 WHERE id IN (:stepIds)")
     suspend fun markAsSynced(stepIds: List<String>)
 }
-

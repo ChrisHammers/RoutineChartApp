@@ -28,4 +28,3 @@ interface ChildProfileDao {
     @Query("SELECT * FROM child_profiles WHERE familyId = :familyId")
     fun observeByFamilyId(familyId: String): Flow<List<ChildProfileEntity>>
 }
-

@@ -61,4 +61,3 @@ class Converters {
     @TypeConverter
     fun toEventType(value: String): EventType = EventType.fromRawValue(value)
 }
-

@@ -36,114 +36,116 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ChildSignInScreen(
     viewModel: ChildSignInViewModel = hiltViewModel(),
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         // Back button at top
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.Start,
         ) {
             TextButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
                 Spacer(modifier = Modifier.size(4.dp))
                 Text("Back")
             }
         }
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // Header
         Icon(
             imageVector = Icons.Default.Face,
             contentDescription = null,
             modifier = Modifier.size(100.dp),
-            tint = MaterialTheme.colorScheme.tertiary
+            tint = MaterialTheme.colorScheme.tertiary,
         )
-        
+
         Spacer(modifier = Modifier.size(16.dp))
-        
+
         Text(
             text = "Welcome!",
             style = MaterialTheme.typography.displayLarge,
             fontWeight = FontWeight.Bold,
-            fontSize = 48.sp
+            fontSize = 48.sp,
         )
-        
+
         Spacer(modifier = Modifier.size(8.dp))
-        
+
         Text(
             text = "Tap to start your routines",
             style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // Error Message
         state.errorMessage?.let { error ->
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
             ) {
                 Text(
                     text = error,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }
-        
+
         // Start Button
         Button(
             onClick = { viewModel.signInAsChild() },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !state.isLoading
+            enabled = !state.isLoading,
         ) {
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 8.dp)
+                modifier = Modifier.padding(vertical = 8.dp),
             ) {
                 if (state.isLoading) {
                     Text(
                         text = "Loading...",
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 } else {
                     Icon(
                         imageVector = Icons.Default.PlayCircle,
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(40.dp),
                     )
                     Spacer(modifier = Modifier.size(16.dp))
                     Text(
                         text = "Start",
                         style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.weight(1f))
     }
 }
-

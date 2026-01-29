@@ -2,10 +2,10 @@ package com.HammersTech.RoutineChart.core.utils
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import com.HammersTech.RoutineChart.core.domain.models.FamilyInvite
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
-import com.HammersTech.RoutineChart.core.domain.models.FamilyInvite
 
 /**
  * QR Code generator using ZXing
@@ -22,16 +22,17 @@ object QRCodeGenerator {
     fun generate(
         string: String,
         width: Int = 512,
-        height: Int = 512
+        height: Int = 512,
     ): Bitmap? {
         return try {
-            val hints = hashMapOf<EncodeHintType, Any>(
-                EncodeHintType.MARGIN to 1 // Minimal margin
-            )
-            
+            val hints =
+                hashMapOf<EncodeHintType, Any>(
+                    EncodeHintType.MARGIN to 1, // Minimal margin
+                )
+
             val writer = QRCodeWriter()
             val bitMatrix = writer.encode(string, BarcodeFormat.QR_CODE, width, height, hints)
-            
+
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
             for (x in 0 until width) {
                 for (y in 0 until height) {
@@ -44,7 +45,7 @@ object QRCodeGenerator {
             null
         }
     }
-    
+
     /**
      * Generate a QR code bitmap for a family invite
      * @param invite The FamilyInvite to generate QR code for
@@ -55,9 +56,8 @@ object QRCodeGenerator {
     fun generate(
         invite: FamilyInvite,
         width: Int = 512,
-        height: Int = 512
+        height: Int = 512,
     ): Bitmap? {
         return generate(invite.qrCodeURL(), width, height)
     }
 }
-

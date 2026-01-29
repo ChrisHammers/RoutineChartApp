@@ -14,10 +14,10 @@ import java.time.Instant
             entity = RoutineEntity::class,
             parentColumns = ["id"],
             childColumns = ["routineId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
-    indices = [Index("routineId")]
+    indices = [Index("routineId")],
 )
 data class RoutineStepEntity(
     @PrimaryKey
@@ -29,31 +29,35 @@ data class RoutineStepEntity(
     val audioCueUrl: String?,
     val createdAt: Instant,
     val deletedAt: Instant?,
-    val synced: Boolean = false // Phase 3.4: Upload queue - tracks if synced to Firestore
+    val synced: Boolean = false, // Phase 3.4: Upload queue - tracks if synced to Firestore
 ) {
-    fun toDomain(): RoutineStep = RoutineStep(
-        id = id,
-        routineId = routineId,
-        orderIndex = orderIndex,
-        label = label,
-        iconName = iconName,
-        audioCueUrl = audioCueUrl,
-        createdAt = createdAt,
-        deletedAt = deletedAt
-    )
+    fun toDomain(): RoutineStep =
+        RoutineStep(
+            id = id,
+            routineId = routineId,
+            orderIndex = orderIndex,
+            label = label,
+            iconName = iconName,
+            audioCueUrl = audioCueUrl,
+            createdAt = createdAt,
+            deletedAt = deletedAt,
+        )
 
     companion object {
-        fun fromDomain(step: RoutineStep, synced: Boolean = false): RoutineStepEntity = RoutineStepEntity(
-            id = step.id,
-            routineId = step.routineId,
-            orderIndex = step.orderIndex,
-            label = step.label,
-            iconName = step.iconName,
-            audioCueUrl = step.audioCueUrl,
-            createdAt = step.createdAt,
-            deletedAt = step.deletedAt,
-            synced = synced
-        )
+        fun fromDomain(
+            step: RoutineStep,
+            synced: Boolean = false,
+        ): RoutineStepEntity =
+            RoutineStepEntity(
+                id = step.id,
+                routineId = step.routineId,
+                orderIndex = step.orderIndex,
+                label = step.label,
+                iconName = step.iconName,
+                audioCueUrl = step.audioCueUrl,
+                createdAt = step.createdAt,
+                deletedAt = step.deletedAt,
+                synced = synced,
+            )
     }
 }
-

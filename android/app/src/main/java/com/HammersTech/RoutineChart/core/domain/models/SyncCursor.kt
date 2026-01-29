@@ -9,5 +9,5 @@ import java.time.Instant
  */
 data class SyncCursor(
     val collection: String, // e.g., "routines", "events", "steps", "assignments", "children"
-    val lastSyncedAt: Instant
+    val lastSyncedAt: Instant,
 )

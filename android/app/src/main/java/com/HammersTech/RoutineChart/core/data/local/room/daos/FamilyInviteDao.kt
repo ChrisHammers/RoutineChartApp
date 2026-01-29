@@ -15,29 +15,28 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.FamilyInviteEn
 interface FamilyInviteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(invite: FamilyInviteEntity)
-    
+
     @Update
     suspend fun update(invite: FamilyInviteEntity)
-    
+
     @Query("SELECT * FROM family_invites WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): FamilyInviteEntity?
-    
+
     @Query("SELECT * FROM family_invites WHERE token = :token LIMIT 1")
     suspend fun getByToken(token: String): FamilyInviteEntity?
-    
+
     @Query("SELECT * FROM family_invites WHERE inviteCode = :inviteCode LIMIT 1")
     suspend fun getByInviteCode(inviteCode: String): FamilyInviteEntity?
-    
+
     @Query("SELECT * FROM family_invites WHERE familyId = :familyId AND isActive = 1 ORDER BY createdAt DESC")
     suspend fun getActiveInvitesByFamily(familyId: String): List<FamilyInviteEntity>
-    
+
     @Query("UPDATE family_invites SET isActive = 0 WHERE id = :id")
     suspend fun deactivate(id: String)
-    
+
     @Query("DELETE FROM family_invites WHERE expiresAt < :now")
     suspend fun deleteExpired(now: Long)
-    
+
     @Query("DELETE FROM family_invites WHERE familyId != :keepFamilyId")
     suspend fun deleteInvitesFromOtherFamilies(keepFamilyId: String)
 }
-

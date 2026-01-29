@@ -8,10 +8,14 @@ import kotlinx.coroutines.flow.Flow
  */
 interface FamilyRepository {
     suspend fun create(family: Family)
+
     suspend fun update(family: Family)
+
     suspend fun getById(id: String): Family?
+
     fun observeById(id: String): Flow<Family?>
+
     suspend fun getFirst(): Family?
+
     suspend fun getAll(): List<Family>
 }
-

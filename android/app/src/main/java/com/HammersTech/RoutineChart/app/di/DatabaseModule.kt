@@ -9,9 +9,9 @@ import com.HammersTech.RoutineChart.core.data.local.room.dao.FamilyDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineAssignmentDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.RoutineStepDao
+import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
 import com.HammersTech.RoutineChart.core.data.local.room.dao.UserDao
 import com.HammersTech.RoutineChart.core.data.local.room.daos.FamilyInviteDao
-import com.HammersTech.RoutineChart.core.data.local.room.dao.SyncCursorDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,18 +27,20 @@ import javax.inject.Singleton
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): RoutineChartDatabase {
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ): RoutineChartDatabase {
         return Room.databaseBuilder(
             context,
             RoutineChartDatabase::class.java,
-            RoutineChartDatabase.DATABASE_NAME
+            RoutineChartDatabase.DATABASE_NAME,
         )
             .addMigrations(
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_2_3,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_3_4,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_4_5,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_5_6,
-                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_6_7
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_6_7,
             )
             .fallbackToDestructiveMigration() // Phase 1: Dev only - remove in production
             .build()
@@ -89,4 +91,3 @@ object DatabaseModule {
         return database.syncCursorDao()
     }
 }
-

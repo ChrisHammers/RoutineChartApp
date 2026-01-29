@@ -18,14 +18,14 @@ import java.time.Instant
             entity = FamilyEntity::class,
             parentColumns = ["id"],
             childColumns = ["familyId"],
-            onDelete = ForeignKey.CASCADE
-        )
+            onDelete = ForeignKey.CASCADE,
+        ),
     ],
     indices = [
         Index(value = ["familyId"]),
         Index(value = ["token"], unique = true),
-        Index(value = ["inviteCode"], unique = true)
-    ]
+        Index(value = ["inviteCode"], unique = true),
+    ],
 )
 data class FamilyInviteEntity(
     @PrimaryKey
@@ -38,7 +38,7 @@ data class FamilyInviteEntity(
     val expiresAt: Long,
     val maxUses: Int?,
     val usedCount: Int,
-    val isActive: Boolean
+    val isActive: Boolean,
 ) {
     fun toDomain(): FamilyInvite {
         return FamilyInvite(
@@ -51,10 +51,10 @@ data class FamilyInviteEntity(
             expiresAt = Instant.ofEpochMilli(expiresAt),
             maxUses = maxUses,
             usedCount = usedCount,
-            isActive = isActive
+            isActive = isActive,
         )
     }
-    
+
     companion object {
         fun fromDomain(invite: FamilyInvite): FamilyInviteEntity {
             return FamilyInviteEntity(
@@ -67,9 +67,8 @@ data class FamilyInviteEntity(
                 expiresAt = invite.expiresAt.toEpochMilli(),
                 maxUses = invite.maxUses,
                 usedCount = invite.usedCount,
-                isActive = invite.isActive
+                isActive = invite.isActive,
             )
         }
     }
 }
-

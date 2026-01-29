@@ -15,9 +15,8 @@ data class RoutineStep(
     val iconName: String?,
     val audioCueUrl: String?,
     val createdAt: Instant,
-    val deletedAt: Instant?
+    val deletedAt: Instant?,
 ) {
     val isDeleted: Boolean
         get() = deletedAt != null
 }
-

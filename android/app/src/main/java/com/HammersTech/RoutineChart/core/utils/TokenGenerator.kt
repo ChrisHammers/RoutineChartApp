@@ -18,7 +18,7 @@ object TokenGenerator {
         SecureRandom().nextBytes(bytes)
         return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP)
     }
-    
+
     /**
      * Generate a URL-safe token (alphanumeric only)
      * @param length Desired token length (default: 32)
@@ -32,4 +32,3 @@ object TokenGenerator {
             .joinToString("")
     }
 }
-

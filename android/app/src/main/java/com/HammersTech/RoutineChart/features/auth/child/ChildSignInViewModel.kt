@@ -17,40 +17,40 @@ import javax.inject.Inject
  * Phase 2.1: Firebase Auth
  */
 @HiltViewModel
-class ChildSignInViewModel @Inject constructor(
-    private val authRepository: AuthRepository
-) : ViewModel() {
-    
-    private val _state = MutableStateFlow(ChildSignInState())
-    val state: StateFlow<ChildSignInState> = _state.asStateFlow()
-    
-    fun signInAsChild() {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
-            
-            val result = authRepository.signInAnonymously()
-            
-            result.fold(
-                onSuccess = {
-                    AppLogger.UI.info("Child signed in anonymously")
-                    _state.update { it.copy(isLoading = false) }
-                },
-                onFailure = { error ->
-                    AppLogger.UI.error("Child sign in failed", error)
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.message ?: "Sign in failed"
-                        )
-                    }
-                }
-            )
+class ChildSignInViewModel
+    @Inject
+    constructor(
+        private val authRepository: AuthRepository,
+    ) : ViewModel() {
+        private val _state = MutableStateFlow(ChildSignInState())
+        val state: StateFlow<ChildSignInState> = _state.asStateFlow()
+
+        fun signInAsChild() {
+            viewModelScope.launch {
+                _state.update { it.copy(isLoading = true, errorMessage = null) }
+
+                val result = authRepository.signInAnonymously()
+
+                result.fold(
+                    onSuccess = {
+                        AppLogger.UI.info("Child signed in anonymously")
+                        _state.update { it.copy(isLoading = false) }
+                    },
+                    onFailure = { error ->
+                        AppLogger.UI.error("Child sign in failed", error)
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = error.message ?: "Sign in failed",
+                            )
+                        }
+                    },
+                )
+            }
         }
     }
-}
 
 data class ChildSignInState(
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
 )
-

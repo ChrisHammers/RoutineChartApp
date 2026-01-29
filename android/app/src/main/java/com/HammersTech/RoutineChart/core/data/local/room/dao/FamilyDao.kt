@@ -28,4 +28,3 @@ interface FamilyDao {
     @Query("SELECT * FROM families")
     suspend fun getAll(): List<FamilyEntity>
 }
-

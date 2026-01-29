@@ -22,14 +22,12 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,14 +48,14 @@ import com.HammersTech.RoutineChart.features.testing.SyncCursorTestScreen
 @Composable
 fun SettingsScreen(
     onDismiss: () -> Unit,
-    viewModel: SettingsViewModel = hiltViewModel()
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     var showJoinFamilyOptions by remember { mutableStateOf(false) }
     var showScanQR by remember { mutableStateOf(false) }
     var showEnterCode by remember { mutableStateOf(false) }
     var showSyncCursorTest by remember { mutableStateOf(false) }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -66,12 +64,12 @@ fun SettingsScreen(
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Done")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
         ) {
             // Family Section
             Text(
@@ -79,9 +77,9 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             // Join a Family (available for both children and parents)
             // Parents can join other families (e.g., co-parenting scenarios)
             ListItem(
@@ -90,22 +88,23 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.PersonAdd,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 },
                 trailingContent = {
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showJoinFamilyOptions = true }
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { showJoinFamilyOptions = true },
             )
             Divider()
-            
+
             // Testing Section (DEBUG only)
             android.util.Log.d("SettingsScreen", "BuildConfig.DEBUG=${com.HammersTech.RoutineChart.BuildConfig.DEBUG}")
             if (com.HammersTech.RoutineChart.BuildConfig.DEBUG && state.currentUser?.role == Role.PARENT) {
@@ -114,15 +113,15 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
-                
+
                 ListItem(
                     headlineContent = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text("Create Test Children")
                             if (state.isCreatingTestData) {
@@ -135,65 +134,67 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.Default.PersonAdd,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary
+                            tint = MaterialTheme.colorScheme.tertiary,
                         )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !state.isCreatingTestData) {
-                            viewModel.createTestChildren()
-                        }
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !state.isCreatingTestData) {
+                                viewModel.createTestChildren()
+                            },
                 )
-                
+
                 if (state.testDataMessage != null) {
                     Text(
                         text = state.testDataMessage!!,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
-                
+
                 ListItem(
                     headlineContent = { Text("SyncCursor CRUD Test") },
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Default.PersonAdd,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     },
                     trailingContent = {
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showSyncCursorTest = true }
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { showSyncCursorTest = true },
                 )
-                
+
                 Divider()
             }
-            
+
             // About Section
             Text(
                 text = "About",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
             )
-            
+
             ListItem(
                 headlineContent = { Text("Version") },
-                supportingContent = { Text("1.0.0") }
+                supportingContent = { Text("1.0.0") },
             )
         }
     }
-    
+
     // Join Family Options Dialog
     if (showJoinFamilyOptions) {
         JoinFamilyOptionsScreen(
@@ -205,10 +206,10 @@ fun SettingsScreen(
             onEnterCode = {
                 showJoinFamilyOptions = false
                 showEnterCode = true
-            }
+            },
         )
     }
-    
+
     // Scan QR Screen
     if (showScanQR) {
         ScanInviteScreen(
@@ -216,10 +217,10 @@ fun SettingsScreen(
             onJoinSuccess = {
                 showScanQR = false
                 onDismiss()
-            }
+            },
         )
     }
-    
+
     // Enter Code Screen
     if (showEnterCode) {
         JoinWithCodeScreen(
@@ -227,10 +228,10 @@ fun SettingsScreen(
             onJoinSuccess = {
                 showEnterCode = false
                 onDismiss()
-            }
+            },
         )
     }
-    
+
     // SyncCursor Test Screen (shown as full screen overlay)
     if (showSyncCursorTest) {
         SyncCursorTestScreen()

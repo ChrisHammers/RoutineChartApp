@@ -28,4 +28,3 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE familyId = :familyId")
     fun observeByFamilyId(familyId: String): Flow<List<UserEntity>>
 }
-

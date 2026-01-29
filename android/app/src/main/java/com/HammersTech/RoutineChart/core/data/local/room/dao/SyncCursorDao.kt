@@ -14,13 +14,13 @@ import com.HammersTech.RoutineChart.core.data.local.room.entities.SyncCursorEnti
 interface SyncCursorDao {
     @Query("SELECT * FROM sync_cursors WHERE collection = :collection LIMIT 1")
     suspend fun getByCollection(collection: String): SyncCursorEntity?
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(cursor: SyncCursorEntity)
-    
+
     @Query("DELETE FROM sync_cursors WHERE collection = :collection")
     suspend fun deleteByCollection(collection: String)
-    
+
     @Query("SELECT * FROM sync_cursors")
     suspend fun getAll(): List<SyncCursorEntity>
 }

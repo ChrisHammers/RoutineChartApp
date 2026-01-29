@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -57,27 +56,28 @@ import com.HammersTech.RoutineChart.core.utils.QRCodeScanner
 fun ScanInviteScreen(
     onDismiss: () -> Unit,
     onJoinSuccess: () -> Unit = {},
-    viewModel: ScanInviteViewModel = hiltViewModel()
+    viewModel: ScanInviteViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.startScanning()
+
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                viewModel.startScanning()
+            }
         }
-    }
-    
+
     LaunchedEffect(state.joinSuccess) {
         if (state.joinSuccess) {
             onJoinSuccess()
             onDismiss()
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -86,14 +86,15 @@ fun ScanInviteScreen(
                     IconButton(onClick = onDismiss) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when {
                 state.isScanning -> {
@@ -103,7 +104,7 @@ fun ScanInviteScreen(
                         onCodeScanned = viewModel::handleScannedCode,
                         onCancel = {
                             viewModel.stopScanning()
-                        }
+                        },
                     )
                 }
                 else -> {
@@ -111,20 +112,20 @@ fun ScanInviteScreen(
                         onStartScanning = {
                             permissionLauncher.launch(Manifest.permission.CAMERA)
                         },
-                        errorMessage = state.errorMessage
+                        errorMessage = state.errorMessage,
                     )
                 }
             }
         }
     }
-    
+
     // Join Confirmation Dialog
     if (state.showConfirmation) {
         JoinConfirmationDialog(
             isJoining = state.isJoining,
             errorMessage = state.errorMessage,
             onConfirm = viewModel::joinFamily,
-            onDismiss = viewModel::cancelJoin
+            onDismiss = viewModel::cancelJoin,
         )
     }
 }
@@ -134,20 +135,21 @@ private fun ScanningView(
     context: android.content.Context,
     lifecycleOwner: androidx.lifecycle.LifecycleOwner,
     onCodeScanned: (String) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
-    val scanner = remember {
-        QRCodeScanner(context, lifecycleOwner).apply {
-            this.onCodeScanned = onCodeScanned
+    val scanner =
+        remember {
+            QRCodeScanner(context, lifecycleOwner).apply {
+                this.onCodeScanned = onCodeScanned
+            }
         }
-    }
-    
+
     DisposableEffect(Unit) {
         onDispose {
             scanner.stopScanning()
         }
     }
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         // Camera Preview
         AndroidView(
@@ -156,35 +158,38 @@ private fun ScanningView(
                     scanner.startScanning(previewView)
                 }
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         )
-        
+
         // Overlay
         Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 50.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 50.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    ),
             ) {
                 Text(
                     text = "Point camera at QR code",
                     modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
             }
-            
+
             Button(
                 onClick = onCancel,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
+                colors =
+                    androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                    ),
             ) {
                 Text("Cancel")
             }
@@ -195,67 +200,69 @@ private fun ScanningView(
 @Composable
 private fun InitialScanView(
     onStartScanning: () -> Unit,
-    errorMessage: String?
+    errorMessage: String?,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Icon(
             imageVector = Icons.Default.QrCodeScanner,
             contentDescription = null,
             modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
-        
+
         Spacer(modifier = Modifier.size(24.dp))
-        
+
         Text(
             text = "Scan QR Code",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
         )
-        
+
         Spacer(modifier = Modifier.size(8.dp))
-        
+
         Text(
             text = "Scan the QR code shown by your family member to join their family",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
-        
+
         Spacer(modifier = Modifier.size(32.dp))
-        
+
         Button(
             onClick = onStartScanning,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
                 imageVector = Icons.Default.Camera,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.size(8.dp))
             Text("Start Scanning")
         }
-        
+
         errorMessage?.let { error ->
             Spacer(modifier = Modifier.size(16.dp))
-            
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
             ) {
                 Text(
                     text = error,
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         }
@@ -267,7 +274,7 @@ private fun JoinConfirmationDialog(
     isJoining: Boolean,
     errorMessage: String?,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = { if (!isJoining) onDismiss() },
@@ -276,14 +283,14 @@ private fun JoinConfirmationDialog(
                 imageVector = Icons.Default.CheckCircle,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
         },
         title = {
             Text(
                 text = "Join Family?",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         },
         text = {
@@ -291,16 +298,16 @@ private fun JoinConfirmationDialog(
                 Text(
                     text = "You'll be able to:",
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
                 )
-                
+
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text("View routines", style = MaterialTheme.typography.bodyMedium)
@@ -310,7 +317,7 @@ private fun JoinConfirmationDialog(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text("Complete tasks", style = MaterialTheme.typography.bodyMedium)
@@ -320,25 +327,26 @@ private fun JoinConfirmationDialog(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Spacer(modifier = Modifier.size(8.dp))
                         Text("See progress", style = MaterialTheme.typography.bodyMedium)
                     }
                 }
-                
+
                 errorMessage?.let { error ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        )
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                            ),
                     ) {
                         Text(
                             text = error,
                             modifier = Modifier.padding(12.dp),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
                 }
@@ -347,7 +355,7 @@ private fun JoinConfirmationDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !isJoining
+                enabled = !isJoining,
             ) {
                 Text(if (isJoining) "Joining..." else "Join")
             }
@@ -355,11 +363,10 @@ private fun JoinConfirmationDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onDismiss,
-                enabled = !isJoining
+                enabled = !isJoining,
             ) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
-

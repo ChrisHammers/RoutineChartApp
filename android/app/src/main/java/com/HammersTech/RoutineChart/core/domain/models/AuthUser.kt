@@ -5,8 +5,7 @@ package com.HammersTech.RoutineChart.core.domain.models
  * Phase 2.1: Firebase Auth
  */
 data class AuthUser(
-    val id: String,  // Firebase UID
+    val id: String, // Firebase UID
     val email: String?,
-    val isAnonymous: Boolean = false
+    val isAnonymous: Boolean = false,
 )
-

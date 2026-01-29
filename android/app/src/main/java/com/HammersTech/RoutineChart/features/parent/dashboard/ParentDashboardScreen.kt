@@ -50,7 +50,7 @@ import com.HammersTech.RoutineChart.features.settings.SettingsScreen
 @Composable
 fun ParentDashboardScreen(
     modifier: Modifier = Modifier,
-    viewModel: ParentDashboardViewModel = hiltViewModel()
+    viewModel: ParentDashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     var showRoutineBuilder by remember { mutableStateOf(false) }
@@ -67,22 +67,22 @@ fun ParentDashboardScreen(
                         IconButton(onClick = { showSettings = true }) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings"
+                                contentDescription = "Settings",
                             )
                         }
                         IconButton(onClick = { showInviteMember = true }) {
                             Icon(
                                 imageVector = Icons.Default.PersonAdd,
-                                contentDescription = "Invite Member"
+                                contentDescription = "Invite Member",
                             )
                         }
                         IconButton(onClick = { viewModel.signOut() }) {
                             Icon(
                                 imageVector = Icons.Default.Logout,
-                                contentDescription = "Sign Out"
+                                contentDescription = "Sign Out",
                             )
                         }
-                    }
+                    },
                 )
             },
             floatingActionButton = {
@@ -90,103 +90,105 @@ fun ParentDashboardScreen(
                     onClick = {
                         editingRoutine = null
                         showRoutineBuilder = true
-                    }
+                    },
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Routine")
                 }
-            }
+            },
         ) { paddingValues ->
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
             ) {
-            when {
-                state.isLoading -> {
-                    Text(
-                        text = "Loading...",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                when {
+                    state.isLoading -> {
+                        Text(
+                            text = "Loading...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
 
-                state.error != null -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Text(
-                            text = "Error",
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-                        Text(
-                            text = state.error!!,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Button(onClick = { viewModel.loadData() }) {
-                            Text("Retry")
+                    state.error != null -> {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Text(
+                                text = "Error",
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
+                            Text(
+                                text = state.error!!,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Button(onClick = { viewModel.loadData() }) {
+                                Text("Retry")
+                            }
                         }
                     }
-                }
 
-                state.routines.isEmpty() -> {
-                    EmptyState(
-                        onCreateRoutine = {
-                            editingRoutine = null
-                            showRoutineBuilder = true
-                        }
-                    )
-                }
+                    state.routines.isEmpty() -> {
+                        EmptyState(
+                            onCreateRoutine = {
+                                editingRoutine = null
+                                showRoutineBuilder = true
+                            },
+                        )
+                    }
 
-                else -> {
-                    RoutinesList(
-                        routines = state.routines,
-                        onRoutineClick = { routine ->
-                            editingRoutine = routine
-                            showRoutineBuilder = true
-                        },
-                        onDeleteRoutine = { routine ->
-                            viewModel.deleteRoutine(routine.id)
-                        }
-                    )
+                    else -> {
+                        RoutinesList(
+                            routines = state.routines,
+                            onRoutineClick = { routine ->
+                                editingRoutine = routine
+                                showRoutineBuilder = true
+                            },
+                            onDeleteRoutine = { routine ->
+                                viewModel.deleteRoutine(routine.id)
+                            },
+                        )
+                    }
                 }
             }
         }
-    }
 
-    // Routine Builder Dialog/Sheet - Outside the Scaffold
-    if (showRoutineBuilder) {
-        RoutineBuilderScreen(
-            routine = editingRoutine,
-            onDismiss = {
-                showRoutineBuilder = false
-                editingRoutine = null
-                viewModel.loadData()
-            }
-        )
-    }
-    
-    // Invite Member Dialog/Sheet
-    if (showInviteMember) {
-        GenerateInviteScreen(
-            onDismiss = {
-                showInviteMember = false
-            }
-        )
-    }
-    
-    // Settings Dialog/Sheet
-    if (showSettings) {
-        SettingsScreen(
-            onDismiss = {
-                showSettings = false
-            }
-        )
-    }
+        // Routine Builder Dialog/Sheet - Outside the Scaffold
+        if (showRoutineBuilder) {
+            RoutineBuilderScreen(
+                routine = editingRoutine,
+                onDismiss = {
+                    showRoutineBuilder = false
+                    editingRoutine = null
+                    viewModel.loadData()
+                },
+            )
+        }
+
+        // Invite Member Dialog/Sheet
+        if (showInviteMember) {
+            GenerateInviteScreen(
+                onDismiss = {
+                    showInviteMember = false
+                },
+            )
+        }
+
+        // Settings Dialog/Sheet
+        if (showSettings) {
+            SettingsScreen(
+                onDismiss = {
+                    showSettings = false
+                },
+            )
+        }
     }
 }
 
@@ -194,19 +196,20 @@ fun ParentDashboardScreen(
 fun RoutinesList(
     routines: List<Routine>,
     onRoutineClick: (Routine) -> Unit,
-    onDeleteRoutine: (Routine) -> Unit
+    onDeleteRoutine: (Routine) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(routines) { routine ->
             RoutineCard(
                 routine = routine,
                 onClick = { onRoutineClick(routine) },
-                onDelete = { onDeleteRoutine(routine) }
+                onDelete = { onDeleteRoutine(routine) },
             )
         }
     }
@@ -216,29 +219,31 @@ fun RoutinesList(
 fun RoutineCard(
     routine: Routine,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Icon
                 Text(
                     text = routine.iconName ?: "📋",
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
                 )
 
                 // Title and version
@@ -246,12 +251,12 @@ fun RoutineCard(
                     Text(
                         text = routine.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
                     )
                     Text(
                         text = "Version ${routine.version}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -260,7 +265,7 @@ fun RoutineCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Delete Routine",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -270,15 +275,16 @@ fun RoutineCard(
 @Composable
 fun EmptyState(onCreateRoutine: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Text(
             text = "📋",
-            style = MaterialTheme.typography.displayLarge
+            style = MaterialTheme.typography.displayLarge,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -286,7 +292,7 @@ fun EmptyState(onCreateRoutine: () -> Unit) {
         Text(
             text = "No Routines Yet",
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -294,7 +300,7 @@ fun EmptyState(onCreateRoutine: () -> Unit) {
         Text(
             text = "Create your first routine to get started!",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -306,4 +312,3 @@ fun EmptyState(onCreateRoutine: () -> Unit) {
         }
     }
 }
-

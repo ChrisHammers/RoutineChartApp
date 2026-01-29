@@ -24,37 +24,41 @@ import java.util.concurrent.Executors
  */
 class QRCodeScanner(
     private val context: Context,
-    private val lifecycleOwner: LifecycleOwner
+    private val lifecycleOwner: LifecycleOwner,
 ) {
     private var cameraExecutor: ExecutorService? = null
     private val barcodeScanner = BarcodeScanning.getClient()
-    
+
     var onCodeScanned: ((String) -> Unit)? = null
     var onError: ((String) -> Unit)? = null
-    
+
     /**
      * Check if camera permission is granted
      */
     fun hasCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
         ) == PackageManager.PERMISSION_GRANTED
     }
-    
+
     /**
      * Request camera permission
      * Note: This must be called from an Activity
      */
-    fun requestCameraPermission(activity: ComponentActivity, onResult: (Boolean) -> Unit) {
-        val launcher = activity.registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            onResult(isGranted)
-        }
+    fun requestCameraPermission(
+        activity: ComponentActivity,
+        onResult: (Boolean) -> Unit,
+    ) {
+        val launcher =
+            activity.registerForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) { isGranted ->
+                onResult(isGranted)
+            }
         launcher.launch(Manifest.permission.CAMERA)
     }
-    
+
     /**
      * Start scanning for QR codes
      * @param previewView The PreviewView to display the camera preview
@@ -64,9 +68,9 @@ class QRCodeScanner(
             onError?.invoke("Camera permission not granted")
             return
         }
-        
+
         cameraExecutor = Executors.newSingleThreadExecutor()
-        
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             try {
@@ -78,7 +82,7 @@ class QRCodeScanner(
             }
         }, ContextCompat.getMainExecutor(context))
     }
-    
+
     /**
      * Stop scanning
      */
@@ -86,62 +90,65 @@ class QRCodeScanner(
         cameraExecutor?.shutdown()
         cameraExecutor = null
     }
-    
+
     private fun bindCameraUseCases(
         cameraProvider: ProcessCameraProvider,
-        previewView: PreviewView
+        previewView: PreviewView,
     ) {
-        val preview = Preview.Builder()
-            .build()
-            .also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-        
-        val imageAnalysis = ImageAnalysis.Builder()
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-            .also { analysis ->
-                analysis.setAnalyzer(cameraExecutor!!) { imageProxy ->
-                    val mediaImage = imageProxy.image
-                    if (mediaImage != null) {
-                        val image = InputImage.fromMediaImage(
-                            mediaImage,
-                            imageProxy.imageInfo.rotationDegrees
-                        )
-                        
-                        barcodeScanner.process(image)
-                            .addOnSuccessListener { barcodes ->
-                                for (barcode in barcodes) {
-                                    if (barcode.format == Barcode.FORMAT_QR_CODE) {
-                                        barcode.rawValue?.let { value ->
-                                            // Stop scanning after first successful scan
-                                            stopScanning()
-                                            onCodeScanned?.invoke(value)
+        val preview =
+            Preview.Builder()
+                .build()
+                .also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+
+        val imageAnalysis =
+            ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+                .also { analysis ->
+                    analysis.setAnalyzer(cameraExecutor!!) { imageProxy ->
+                        val mediaImage = imageProxy.image
+                        if (mediaImage != null) {
+                            val image =
+                                InputImage.fromMediaImage(
+                                    mediaImage,
+                                    imageProxy.imageInfo.rotationDegrees,
+                                )
+
+                            barcodeScanner.process(image)
+                                .addOnSuccessListener { barcodes ->
+                                    for (barcode in barcodes) {
+                                        if (barcode.format == Barcode.FORMAT_QR_CODE) {
+                                            barcode.rawValue?.let { value ->
+                                                // Stop scanning after first successful scan
+                                                stopScanning()
+                                                onCodeScanned?.invoke(value)
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            .addOnFailureListener { e ->
-                                AppLogger.UI.error("Failed to process barcode", e)
-                            }
-                            .addOnCompleteListener {
-                                imageProxy.close()
-                            }
-                    } else {
-                        imageProxy.close()
+                                .addOnFailureListener { e ->
+                                    AppLogger.UI.error("Failed to process barcode", e)
+                                }
+                                .addOnCompleteListener {
+                                    imageProxy.close()
+                                }
+                        } else {
+                            imageProxy.close()
+                        }
                     }
                 }
-            }
-        
+
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-        
+
         try {
             cameraProvider.unbindAll()
             cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
-                imageAnalysis
+                imageAnalysis,
             )
         } catch (e: Exception) {
             AppLogger.UI.error("Failed to bind camera", e)
@@ -149,4 +156,3 @@ class QRCodeScanner(
         }
     }
 }
-

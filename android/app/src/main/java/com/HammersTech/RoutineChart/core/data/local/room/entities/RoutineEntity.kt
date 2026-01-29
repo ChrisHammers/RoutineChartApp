@@ -11,7 +11,7 @@ import java.time.Instant
     tableName = "routines",
     // Note: No foreign key constraint on familyId to allow routines to reference families
     // that don't exist locally yet (e.g., when pulling from Firestore)
-    indices = [Index("userId"), Index("familyId"), Index("synced")]
+    indices = [Index("userId"), Index("familyId"), Index("synced")],
 )
 data class RoutineEntity(
     @PrimaryKey
@@ -25,35 +25,39 @@ data class RoutineEntity(
     val createdAt: Instant,
     val updatedAt: Instant,
     val deletedAt: Instant?,
-    val synced: Boolean = false // Phase 3.2: Upload queue - tracks if synced to Firestore
+    val synced: Boolean = false, // Phase 3.2: Upload queue - tracks if synced to Firestore
 ) {
-    fun toDomain(): Routine = Routine(
-        id = id,
-        userId = userId,
-        familyId = familyId,
-        title = title,
-        iconName = iconName,
-        version = version,
-        completionRule = completionRule,
-        createdAt = createdAt,
-        updatedAt = updatedAt,
-        deletedAt = deletedAt
-    )
+    fun toDomain(): Routine =
+        Routine(
+            id = id,
+            userId = userId,
+            familyId = familyId,
+            title = title,
+            iconName = iconName,
+            version = version,
+            completionRule = completionRule,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+            deletedAt = deletedAt,
+        )
 
     companion object {
-        fun fromDomain(routine: Routine, synced: Boolean = false): RoutineEntity = RoutineEntity(
-            id = routine.id,
-            userId = routine.userId,
-            familyId = routine.familyId,
-            title = routine.title,
-            iconName = routine.iconName,
-            version = routine.version,
-            completionRule = routine.completionRule,
-            createdAt = routine.createdAt,
-            updatedAt = routine.updatedAt,
-            deletedAt = routine.deletedAt,
-            synced = synced
-        )
+        fun fromDomain(
+            routine: Routine,
+            synced: Boolean = false,
+        ): RoutineEntity =
+            RoutineEntity(
+                id = routine.id,
+                userId = routine.userId,
+                familyId = routine.familyId,
+                title = routine.title,
+                iconName = routine.iconName,
+                version = routine.version,
+                completionRule = routine.completionRule,
+                createdAt = routine.createdAt,
+                updatedAt = routine.updatedAt,
+                deletedAt = routine.deletedAt,
+                synced = synced,
+            )
     }
 }
-

@@ -1,7 +1,6 @@
 package com.HammersTech.RoutineChart.features.parent.routinebuilder
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +43,7 @@ import com.HammersTech.RoutineChart.core.domain.models.Routine
 fun RoutineBuilderScreen(
     routine: Routine?,
     onDismiss: () -> Unit,
-    viewModel: RoutineBuilderViewModel = hiltViewModel()
+    viewModel: RoutineBuilderViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -67,27 +66,28 @@ fun RoutineBuilderScreen(
                 actions = {
                     TextButton(
                         onClick = { viewModel.save(onSuccess = onDismiss) },
-                        enabled = state.canSave && !state.isSaving
+                        enabled = state.canSave && !state.isSaving,
                     ) {
                         Text("Save")
                     }
-                }
+                },
             )
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Routine Details Section
             item {
                 Text(
                     text = "Routine Details",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
 
@@ -98,7 +98,7 @@ fun RoutineBuilderScreen(
                     label = { Text("Routine Name") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 )
             }
 
@@ -108,7 +108,7 @@ fun RoutineBuilderScreen(
                     onValueChange = viewModel::updateIconName,
                     label = { Text("Icon") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
                 )
             }
 
@@ -118,7 +118,7 @@ fun RoutineBuilderScreen(
                 Text(
                     text = "Steps",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
             }
 
@@ -134,14 +134,14 @@ fun RoutineBuilderScreen(
                     },
                     onDelete = {
                         viewModel.removeStep(index)
-                    }
+                    },
                 )
             }
 
             item {
                 Button(
                     onClick = viewModel::addStep,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -156,7 +156,7 @@ fun RoutineBuilderScreen(
                     Text(
                         text = "Assign to Children",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                 }
 
@@ -166,7 +166,7 @@ fun RoutineBuilderScreen(
                         childName = child.displayName,
                         childIcon = child.avatarIcon ?: "👤",
                         isSelected = state.selectedChildIds.contains(child.id),
-                        onToggle = { viewModel.toggleChildSelection(child.id) }
+                        onToggle = { viewModel.toggleChildSelection(child.id) },
                     )
                 }
             }
@@ -177,7 +177,7 @@ fun RoutineBuilderScreen(
                     Text(
                         text = state.error!!,
                         color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
@@ -196,18 +196,18 @@ fun StepItem(
     step: StepInput,
     onLabelChange: (String) -> Unit,
     onIconChange: (String) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // Step number
         Text(
             text = "${index + 1}.",
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.width(32.dp)
+            modifier = Modifier.width(32.dp),
         )
 
         // Icon
@@ -216,7 +216,7 @@ fun StepItem(
             onValueChange = onIconChange,
             modifier = Modifier.width(60.dp),
             singleLine = true,
-            textStyle = MaterialTheme.typography.titleMedium
+            textStyle = MaterialTheme.typography.titleMedium,
         )
 
         // Label
@@ -226,7 +226,7 @@ fun StepItem(
             label = { Text("Step name") },
             modifier = Modifier.weight(1f),
             singleLine = true,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
         )
 
         // Delete button
@@ -234,7 +234,7 @@ fun StepItem(
             Icon(
                 Icons.Default.Delete,
                 contentDescription = "Delete Step",
-                tint = MaterialTheme.colorScheme.error
+                tint = MaterialTheme.colorScheme.error,
             )
         }
     }
@@ -245,33 +245,33 @@ fun ChildAssignmentItem(
     childName: String,
     childIcon: String,
     isSelected: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = childIcon,
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
             )
             Text(
                 text = childName,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
             )
         }
 
         Checkbox(
             checked = isSelected,
-            onCheckedChange = { onToggle() }
+            onCheckedChange = { onToggle() },
         )
     }
 }
-

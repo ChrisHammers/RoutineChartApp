@@ -12,6 +12,5 @@ data class User(
     val role: Role,
     val displayName: String,
     val email: String?,
-    val createdAt: Instant
+    val createdAt: Instant,
 )
-

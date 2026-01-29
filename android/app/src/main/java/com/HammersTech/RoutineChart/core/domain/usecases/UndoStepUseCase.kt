@@ -12,36 +12,38 @@ import javax.inject.Inject
 /**
  * Use case for recording a step undo event
  */
-class UndoStepUseCase @Inject constructor(
-    private val completionEventRepository: CompletionEventRepository
-) {
-    suspend operator fun invoke(
-        familyId: String,
-        familyTimeZone: String,
-        childId: String,
-        routineId: String,
-        stepId: String,
-        deviceId: String
-    ): CompletionEvent {
-        val now = Instant.now()
-        val dayKey = DateHelpers.localDayKey(now, familyTimeZone)
+class UndoStepUseCase
+    @Inject
+    constructor(
+        private val completionEventRepository: CompletionEventRepository,
+    ) {
+        suspend operator fun invoke(
+            familyId: String,
+            familyTimeZone: String,
+            childId: String,
+            routineId: String,
+            stepId: String,
+            deviceId: String,
+        ): CompletionEvent {
+            val now = Instant.now()
+            val dayKey = DateHelpers.localDayKey(now, familyTimeZone)
 
-        val event = CompletionEvent(
-            id = ULIDGenerator.generate(),
-            familyId = familyId,
-            childId = childId,
-            routineId = routineId,
-            stepId = stepId,
-            eventType = EventType.UNDO,
-            eventAt = now,
-            localDayKey = dayKey,
-            deviceId = deviceId,
-            synced = false
-        )
+            val event =
+                CompletionEvent(
+                    id = ULIDGenerator.generate(),
+                    familyId = familyId,
+                    childId = childId,
+                    routineId = routineId,
+                    stepId = stepId,
+                    eventType = EventType.UNDO,
+                    eventAt = now,
+                    localDayKey = dayKey,
+                    deviceId = deviceId,
+                    synced = false,
+                )
 
-        completionEventRepository.create(event)
-        AppLogger.UseCase.info("Undid step: $stepId for child: $childId")
-        return event
+            completionEventRepository.create(event)
+            AppLogger.UseCase.info("Undid step: $stepId for child: $childId")
+            return event
+        }
     }
-}
-

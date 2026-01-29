@@ -16,16 +16,16 @@ data class CompletionEvent(
     val eventAt: Instant,
     val localDayKey: String, // YYYY-MM-DD in family timezone
     val deviceId: String,
-    val synced: Boolean = false
+    val synced: Boolean = false,
 ) {
     companion object {
         /**
          * Events are ordered by eventAt (primary) and eventId (tiebreaker)
          */
-        val COMPARATOR: Comparator<CompletionEvent> = compareBy(
-            { it.eventAt },
-            { it.id }
-        )
+        val COMPARATOR: Comparator<CompletionEvent> =
+            compareBy(
+                { it.eventAt },
+                { it.id },
+            )
     }
 }
-

@@ -8,10 +8,18 @@ import kotlinx.coroutines.flow.Flow
  */
 interface RoutineRepository {
     suspend fun create(routine: Routine)
+
     suspend fun update(routine: Routine)
+
     suspend fun getById(id: String): Routine?
+
     fun observeById(id: String): Flow<Routine?>
-    suspend fun getAll(userId: String, familyId: String?, includeDeleted: Boolean): List<Routine>
+
+    suspend fun getAll(
+        userId: String,
+        familyId: String?,
+        includeDeleted: Boolean,
+    ): List<Routine>
+
     fun observeByFamilyId(familyId: String): Flow<List<Routine>> // Keep for backward compatibility, but should use getAll
 }
-

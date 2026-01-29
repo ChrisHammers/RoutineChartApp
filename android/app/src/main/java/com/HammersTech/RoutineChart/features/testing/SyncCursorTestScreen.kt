@@ -19,108 +19,113 @@ import androidx.hilt.navigation.compose.hiltViewModel
  * Phase 3.1: Sync Infrastructure
  */
 @Composable
-fun SyncCursorTestScreen(
-    viewModel: SyncCursorTestViewModel = hiltViewModel()
-) {
+fun SyncCursorTestScreen(viewModel: SyncCursorTestViewModel = hiltViewModel()) {
     val testResults by viewModel.testResults.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("SyncCursor Test") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Header
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = "SyncCursor CRUD Test",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = MaterialTheme.typography.headlineMedium.fontWeight
+                    fontWeight = MaterialTheme.typography.headlineMedium.fontWeight,
                 )
                 Text(
                     text = "Phase 3.1: Sync Infrastructure",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            
+
             // Test Results
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    ),
             ) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(testResults) { result ->
                         Text(
                             text = result,
                             style = MaterialTheme.typography.bodyMedium,
                             fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
-            
+
             // Run All Tests Button
             Button(
                 onClick = { viewModel.runTests() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isRunning,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRunning) {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor =
+                            if (isRunning) {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                    ),
             ) {
                 Text(
                     text = if (isRunning) "Running Tests..." else "Run All Tests",
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
-            
+
             // Clear Results Button
             OutlinedButton(
                 onClick = { viewModel.clearResults() },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
+                colors =
+                    ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
             ) {
                 Text(
                     text = "Clear Results",
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
     }
 }
-
