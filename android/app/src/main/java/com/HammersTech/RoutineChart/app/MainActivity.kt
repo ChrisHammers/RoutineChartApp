@@ -145,11 +145,13 @@ class MainViewModel @Inject constructor(
                                         AppLogger.Database.info("✅ Pulled $pulled routine(s) from Firestore on app launch")
                                     }
                                     
-                                    // Option B: Seed after sync - only when user has no routines; seed into current family so routines sync to cloud
-                                    seedDataManager.seedDataIfNeeded(existingUser.id, existingUser.familyId)
-                                    val uploadedAfterSeed = routineRepository.uploadUnsynced(existingUser.id, existingUser.familyId)
-                                    if (uploadedAfterSeed > 0) {
-                                        AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
+                                    // Option B: Seed after sync - only when user has no routines; Parents only (Children don't have routines without assignment)
+                                    if (existingUser.role == Role.PARENT) {
+                                        seedDataManager.seedDataIfNeeded(existingUser.id, existingUser.familyId)
+                                        val uploadedAfterSeed = routineRepository.uploadUnsynced(existingUser.id, existingUser.familyId)
+                                        if (uploadedAfterSeed > 0) {
+                                            AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)

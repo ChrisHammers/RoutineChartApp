@@ -32,43 +32,84 @@ final class SeedDataManager {
         self.userRepo = userRepo
     }
     
-    func seedIfNeeded(userId: String) async throws {
-        // Check if already seeded
-        let families = try await familyRepo.getAll()
-        guard families.isEmpty else {
-            AppLogger.database.info("Database already seeded")
+    /// Seeds demo routines (Morning, Bedtime) only when the user has no routines.
+    /// Call after sync so local DB may already have routines from Firestore.
+    /// When familyId is provided and the family exists, seeds into that family so new routines sync to the cloud.
+    func seedIfNeeded(userId: String, familyId: String? = nil) async throws {
+        // Only seed when user has no routines (e.g. fresh start)
+        let existingRoutines = try await routineRepo.getAll(userId: userId, familyId: nil, includeDeleted: false)
+        guard existingRoutines.isEmpty else {
+            AppLogger.database.info("[Seed] User already has \(existingRoutines.count) routine(s), skipping seed")
             return
         }
         
-        AppLogger.database.info("Seeding database with test data...")
+        AppLogger.database.info("[Seed] No routines found, seeding initial data...")
         
-        // Create family
-        let family = Family(
-            name: "Test Family",
-            timeZone: TimeZone.current.identifier,
-            weekStartsOn: 0,
-            planTier: .free
-        )
-        try await familyRepo.create(family)
+        let family: Family
+        let child1: ChildProfile
+        let child2: ChildProfile
         
-        // Create child profiles
-        let child1 = ChildProfile(
-            familyId: family.id,
-            displayName: "Emma",
-            avatarIcon: "🌟",
-            ageBand: .age_5_7,
-            readingMode: .light_text
-        )
-        try await childRepo.create(child1)
-        
-        let child2 = ChildProfile(
-            familyId: family.id,
-            displayName: "Noah",
-            avatarIcon: "🚀",
-            ageBand: .age_8_10,
-            readingMode: .full_text
-        )
-        try await childRepo.create(child2)
+        if let fid = familyId, let existingFamily = try await familyRepo.get(id: fid) {
+            family = existingFamily
+            let existingChildren = try await childRepo.getAll(familyId: fid)
+            if existingChildren.isEmpty {
+                child1 = ChildProfile(
+                    familyId: family.id,
+                    displayName: "Emma",
+                    avatarIcon: "🌟",
+                    ageBand: .age_5_7,
+                    readingMode: .light_text
+                )
+                try await childRepo.create(child1)
+                child2 = ChildProfile(
+                    familyId: family.id,
+                    displayName: "Noah",
+                    avatarIcon: "🚀",
+                    ageBand: .age_8_10,
+                    readingMode: .full_text
+                )
+                try await childRepo.create(child2)
+            } else {
+                child1 = existingChildren[0]
+                child2 = existingChildren.count > 1 ? existingChildren[1] : ChildProfile(
+                    familyId: family.id,
+                    displayName: "Noah",
+                    avatarIcon: "🚀",
+                    ageBand: .age_8_10,
+                    readingMode: .full_text
+                )
+                if existingChildren.count < 2 {
+                    try await childRepo.create(child2)
+                }
+            }
+        } else {
+            // Create new family and children
+            family = Family(
+                name: "Test Family",
+                timeZone: TimeZone.current.identifier,
+                weekStartsOn: 0,
+                planTier: .free
+            )
+            try await familyRepo.create(family)
+            
+            child1 = ChildProfile(
+                familyId: family.id,
+                displayName: "Emma",
+                avatarIcon: "🌟",
+                ageBand: .age_5_7,
+                readingMode: .light_text
+            )
+            try await childRepo.create(child1)
+            
+            child2 = ChildProfile(
+                familyId: family.id,
+                displayName: "Noah",
+                avatarIcon: "🚀",
+                ageBand: .age_8_10,
+                readingMode: .full_text
+            )
+            try await childRepo.create(child2)
+        }
         
         // Create Morning Routine
         let morningRoutine = Routine(
@@ -153,7 +194,7 @@ final class SeedDataManager {
         )
         try await assignmentRepo.create(assignment4)
         
-        AppLogger.database.info("Database seeded successfully with 2 children and 2 routines")
+        AppLogger.database.info("[Seed] Seed data created: 1 family, 2 children, 2 routines, 10 steps, 4 assignments")
     }
 }
 

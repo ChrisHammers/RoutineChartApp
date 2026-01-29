@@ -174,6 +174,15 @@ final class AppDependencies: ObservableObject {
                         if pulled > 0 {
                             AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore on app launch")
                         }
+                        
+                        // Option B: Seed after sync - only when user has no routines; Parents only (Children don't have routines without assignment)
+                        if user.role == .parent {
+                            try? await seedDataManager.seedIfNeeded(userId: user.id, familyId: user.familyId)
+                            let uploadedAfterSeed = try? await compositeRepo.uploadUnsynced(userId: user.id, familyId: user.familyId)
+                            if let u = uploadedAfterSeed, u > 0 {
+                                AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
+                            }
+                        }
                     } catch {
                         AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")
                         // Continue even if sync fails - UI will show local data
@@ -210,6 +219,15 @@ final class AppDependencies: ObservableObject {
                                     let pulled = try await routineCompositeRepo.pullRoutines(userId: user.id, familyId: user.familyId)
                                     if pulled > 0 {
                                         AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore after user sync")
+                                    }
+                                    
+                                    // Option B: Seed after sync - only when user has no routines; Parents only
+                                    if user.role == .parent {
+                                        try? await seedDataManager.seedIfNeeded(userId: user.id, familyId: user.familyId)
+                                        let uploadedAfterSeed = try? await routineCompositeRepo.uploadUnsynced(userId: user.id, familyId: user.familyId)
+                                        if let u = uploadedAfterSeed, u > 0 {
+                                            AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
+                                        }
                                     }
                                 } catch {
                                     AppLogger.database.warning("⚠️ Failed to sync routines after user sync: \(error.localizedDescription)")
@@ -291,6 +309,13 @@ final class AppDependencies: ObservableObject {
                     let pulled = try await compositeRepo.pullRoutines(userId: newUser.id, familyId: newUser.familyId)
                     if pulled > 0 {
                         AppLogger.database.info("✅ Pulled \(pulled) routine(s) from Firestore on app launch")
+                    }
+                    
+                    // Option B: Seed after sync - new user is always Parent; seed into current family so routines sync to cloud
+                    try? await seedDataManager.seedIfNeeded(userId: newUser.id, familyId: newUser.familyId)
+                    let uploadedAfterSeed = try? await compositeRepo.uploadUnsynced(userId: newUser.id, familyId: newUser.familyId)
+                    if let u = uploadedAfterSeed, u > 0 {
+                        AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
                     }
                 } catch {
                     AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")
