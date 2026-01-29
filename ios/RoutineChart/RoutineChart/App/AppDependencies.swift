@@ -71,7 +71,8 @@ final class AppDependencies: ObservableObject {
         // Use composite repository for routines (SQLite + Firestore sync via upload queue)
         self.routineRepo = CompositeRoutineRepository()
         self.stepRepo = SQLiteRoutineStepRepository()
-        self.assignmentRepo = SQLiteRoutineAssignmentRepository()
+        // Phase 3.5: Use composite for assignments (SQLite + Firestore sync)
+        self.assignmentRepo = CompositeRoutineAssignmentRepository()
         self.eventRepo = SQLiteCompletionEventRepository()
         // Use composite repository for invites (SQLite + Firestore sync)
         self.inviteRepo = CompositeFamilyInviteRepository()
@@ -192,6 +193,15 @@ final class AppDependencies: ObservableObject {
                                 AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
                             }
                         }
+                        
+                        // Phase 3.5: Sync assignments (upload then pull)
+                        if let assignmentComposite = assignmentRepo as? CompositeRoutineAssignmentRepository {
+                            try? await assignmentComposite.uploadUnsynced(familyId: user.familyId)
+                            let pulledAssignments = try? await assignmentComposite.pullAssignments(familyId: user.familyId)
+                            if let p = pulledAssignments, p > 0 {
+                                AppLogger.database.info("✅ Pulled \(p) assignment(s) from Firestore on app launch")
+                            }
+                        }
                     } catch {
                         AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")
                         // Continue even if sync fails - UI will show local data
@@ -237,6 +247,12 @@ final class AppDependencies: ObservableObject {
                                         if let u = uploadedAfterSeed, u > 0 {
                                             AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
                                         }
+                                    }
+                                    
+                                    // Phase 3.5: Sync assignments
+                                    if let assignmentComposite = assignmentRepo as? CompositeRoutineAssignmentRepository {
+                                        try? await assignmentComposite.uploadUnsynced(familyId: user.familyId)
+                                        try? await assignmentComposite.pullAssignments(familyId: user.familyId)
                                     }
                                 } catch {
                                     AppLogger.database.warning("⚠️ Failed to sync routines after user sync: \(error.localizedDescription)")
@@ -325,6 +341,12 @@ final class AppDependencies: ObservableObject {
                     let uploadedAfterSeed = try? await compositeRepo.uploadUnsynced(userId: newUser.id, familyId: newUser.familyId)
                     if let u = uploadedAfterSeed, u > 0 {
                         AppLogger.database.info("✅ Uploaded \(u) seed routine(s) to Firestore")
+                    }
+                    
+                    // Phase 3.5: Sync assignments
+                    if let assignmentComposite = assignmentRepo as? CompositeRoutineAssignmentRepository {
+                        try? await assignmentComposite.uploadUnsynced(familyId: newUser.familyId)
+                        try? await assignmentComposite.pullAssignments(familyId: newUser.familyId)
                     }
                 } catch {
                     AppLogger.database.warning("⚠️ Failed to sync routines: \(error.localizedDescription)")

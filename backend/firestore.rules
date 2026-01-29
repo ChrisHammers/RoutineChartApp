@@ -229,6 +229,30 @@ service cloud.firestore {
     }
     
     // ============================================
+    // Routine Assignments Collection (Top-Level)
+    // ============================================
+    // Phase 3.5: Assignments stored as top-level for sync
+    // Structure: /routine_assignments/{assignmentId}
+    // Document has familyId, routineId, childId, isActive, assignedAt, updatedAt, deletedAt
+    
+    match /routine_assignments/{assignmentId} {
+      // Family members (parent or child) can read assignments for their family
+      allow read: if isAuthenticated() 
+                  && resource.data.familyId != null 
+                  && belongsToFamily(resource.data.familyId);
+      
+      // Only parents can create assignments for their family
+      allow create: if isAuthenticated() 
+                    && request.resource.data.familyId != null 
+                    && isParentInFamily(request.resource.data.familyId);
+      
+      // Only parents can update/delete (including soft delete via updatedAt/deletedAt) assignments for their family
+      allow update, delete: if isAuthenticated() 
+                            && resource.data.familyId != null 
+                            && isParentInFamily(resource.data.familyId);
+    }
+    
+    // ============================================
     // Deny all other paths (for now)
     // ============================================
     // Note: Future collections (events, etc.) will be added here

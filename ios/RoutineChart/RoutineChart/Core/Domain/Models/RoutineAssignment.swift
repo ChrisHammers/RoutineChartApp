@@ -15,6 +15,7 @@ struct RoutineAssignment: Identifiable, Codable, Equatable, Hashable {
     let childId: String
     var isActive: Bool
     let assignedAt: Date
+    var updatedAt: Date
     var deletedAt: Date?
     
     var isDeleted: Bool {
@@ -28,6 +29,7 @@ struct RoutineAssignment: Identifiable, Codable, Equatable, Hashable {
         childId: String,
         isActive: Bool = true,
         assignedAt: Date = Date(),
+        updatedAt: Date? = nil,
         deletedAt: Date? = nil
     ) {
         self.id = id
@@ -36,6 +38,7 @@ struct RoutineAssignment: Identifiable, Codable, Equatable, Hashable {
         self.childId = childId
         self.isActive = isActive
         self.assignedAt = assignedAt
+        self.updatedAt = updatedAt ?? assignedAt
         self.deletedAt = deletedAt
     }
 }

@@ -21,6 +21,8 @@ final class SQLiteRoutineAssignmentRepository: RoutineAssignmentRepository {
         try await db.write { db in
             var mutableAssignment = assignment
             try mutableAssignment.insert(db)
+            // Mark as unsynced (Phase 3.5)
+            try db.execute(sql: "UPDATE routine_assignments SET synced = 0 WHERE id = ?", arguments: [assignment.id])
         }
         AppLogger.database.info("Created assignment: \(assignment.id)")
     }
@@ -36,7 +38,9 @@ final class SQLiteRoutineAssignmentRepository: RoutineAssignmentRepository {
         let db = try dbManager.database()
         try await db.write { db in
             var mutableAssignment = assignment
+            mutableAssignment.updatedAt = Date()
             try mutableAssignment.update(db)
+            try db.execute(sql: "UPDATE routine_assignments SET synced = 0 WHERE id = ?", arguments: [assignment.id])
         }
         AppLogger.database.info("Updated assignment: \(assignment.id)")
     }
@@ -81,9 +85,49 @@ final class SQLiteRoutineAssignmentRepository: RoutineAssignmentRepository {
                 throw DatabaseError.recordNotFound
             }
             assignment.deletedAt = Date()
+            assignment.updatedAt = Date()
             try assignment.update(db)
+            try db.execute(sql: "UPDATE routine_assignments SET synced = 0 WHERE id = ?", arguments: [id])
         }
         AppLogger.database.info("Soft deleted assignment: \(id)")
+    }
+    
+    // MARK: - Sync Methods (Phase 3.5)
+    
+    /// Get all unsynced assignments for a family (including soft-deleted so we sync deletedAt)
+    func getUnsynced(familyId: String) async throws -> [RoutineAssignment] {
+        let db = try dbManager.database()
+        return try await db.read { db in
+            let sql = "SELECT id FROM routine_assignments WHERE familyId = ? AND synced = 0"
+            let unsyncedIds = try String.fetchAll(db, sql: sql, arguments: StatementArguments([familyId]))
+            var assignments: [RoutineAssignment] = []
+            for id in unsyncedIds {
+                if let assignment = try RoutineAssignment.fetchOne(db, key: id) {
+                    assignments.append(assignment)
+                }
+            }
+            return assignments
+        }
+    }
+    
+    /// Mark assignment as synced
+    func markAsSynced(assignmentId: String) async throws {
+        let db = try dbManager.database()
+        try await db.write { db in
+            try db.execute(sql: "UPDATE routine_assignments SET synced = 1 WHERE id = ?", arguments: [assignmentId])
+        }
+        AppLogger.database.info("Marked assignment as synced: \(assignmentId)")
+    }
+    
+    /// Mark multiple assignments as synced
+    func markAsSynced(assignmentIds: [String]) async throws {
+        let db = try dbManager.database()
+        try await db.write { db in
+            for id in assignmentIds {
+                try db.execute(sql: "UPDATE routine_assignments SET synced = 1 WHERE id = ?", arguments: [id])
+            }
+        }
+        AppLogger.database.info("Marked \(assignmentIds.count) assignment(s) as synced")
     }
 }
 

@@ -400,6 +400,18 @@ final class SQLiteManager {
             AppLogger.database.info("Database schema v8 completed - added synced column to routine_steps")
         }
         
+        // V9: Add synced and updatedAt to routine_assignments (Phase 3.5: Sync RoutineAssignments)
+        migrator.registerMigration("v9") { db in
+            AppLogger.database.info("Database schema v9 starting - adding synced and updatedAt to routine_assignments")
+            // Add synced column (SQLite stores booleans as INTEGER: 0 = false, 1 = true)
+            try db.execute(sql: "ALTER TABLE routine_assignments ADD COLUMN synced INTEGER NOT NULL DEFAULT 0")
+            // Add updatedAt for last-write-wins merge
+            try db.execute(sql: "ALTER TABLE routine_assignments ADD COLUMN updatedAt DATETIME")
+            try db.execute(sql: "UPDATE routine_assignments SET updatedAt = assignedAt WHERE updatedAt IS NULL")
+            try db.execute(sql: "CREATE INDEX IF NOT EXISTS idx_routine_assignments_synced ON routine_assignments(synced)")
+            AppLogger.database.info("Database schema v9 completed - added synced and updatedAt to routine_assignments")
+        }
+        
         return migrator
     }
 }

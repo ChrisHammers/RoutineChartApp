@@ -329,4 +329,5 @@
 Once Phase 3.3 and 3.4 are confirmed complete:
 - [ ] Document any issues found
 - [ ] Mark phases as complete in spec
-- [ ] Move to Phase 3.5 (Sync RoutineAssignments) or Phase 3.6 (Sync CompletionEvents)
+- [ ] **Phase 3.5:** Use [PHASE_3_5_iOS_TESTING.md](./PHASE_3_5_iOS_TESTING.md) to test Sync RoutineAssignments
+- [ ] Phase 3.6 (Sync CompletionEvents) – when ready

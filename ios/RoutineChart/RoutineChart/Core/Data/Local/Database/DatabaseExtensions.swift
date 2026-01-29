@@ -153,7 +153,18 @@ extension RoutineAssignment: FetchableRecord, MutablePersistableRecord {
     static let databaseTableName = "routine_assignments"
     
     enum Columns: String, ColumnExpression {
-        case id, familyId, routineId, childId, isActive, assignedAt, deletedAt
+        case id, familyId, routineId, childId, isActive, assignedAt, updatedAt, deletedAt
+    }
+    
+    nonisolated init(row: Row) throws {
+        id = row[Columns.id]
+        familyId = row[Columns.familyId]
+        routineId = row[Columns.routineId]
+        childId = row[Columns.childId]
+        isActive = row[Columns.isActive]
+        assignedAt = row[Columns.assignedAt]
+        updatedAt = (row[Columns.updatedAt] as Date?) ?? row[Columns.assignedAt]
+        deletedAt = row[Columns.deletedAt]
     }
     
     func encode(to container: inout PersistenceContainer) {
@@ -163,6 +174,7 @@ extension RoutineAssignment: FetchableRecord, MutablePersistableRecord {
         container[Columns.childId] = childId
         container[Columns.isActive] = isActive
         container[Columns.assignedAt] = assignedAt
+        container[Columns.updatedAt] = updatedAt
         container[Columns.deletedAt] = deletedAt
     }
 }
