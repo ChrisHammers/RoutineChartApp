@@ -34,8 +34,40 @@ class ParentDashboardViewModel @Inject constructor(
     private val _state = MutableStateFlow(ParentDashboardState())
     val state: StateFlow<ParentDashboardState> = _state.asStateFlow()
 
+    /** Tracks which user's data is currently loaded so we reload when the user switches */
+    private var lastLoadedUserId: String? = null
+
     init {
-        loadData()
+        viewModelScope.launch {
+            authRepository.authStateFlow.collect { authUser ->
+                val newId = authUser?.id
+                if (newId != lastLoadedUserId) {
+                    lastLoadedUserId = newId
+                    if (newId == null) {
+                        _state.update {
+                            it.copy(
+                                routines = emptyList(),
+                                children = emptyList(),
+                                familyId = null,
+                                isLoading = false,
+                                error = "Not signed in"
+                            )
+                        }
+                    } else {
+                        _state.update {
+                            it.copy(
+                                routines = emptyList(),
+                                children = emptyList(),
+                                familyId = null,
+                                isLoading = true,
+                                error = null
+                            )
+                        }
+                        loadData()
+                    }
+                }
+            }
+        }
     }
 
     fun loadData() {
