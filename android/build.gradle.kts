@@ -15,6 +15,9 @@ allprojects {
         version.set("1.0.1")
         android.set(true)
         outputColorName.set("RED")
+        filter {
+            exclude("**/build.gradle.kts")
+        }
     }
 }
 

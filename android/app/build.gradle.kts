@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")  // Phase 2.1: Enabled for Firebase Auth
+    id("com.google.gms.google-services") // Phase 2.1: Enabled for Firebase Auth
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
 }
@@ -28,7 +28,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
@@ -43,11 +43,12 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += listOf(
-            "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"
-        )
+        freeCompilerArgs +=
+            listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            )
     }
 
     buildFeatures {
@@ -145,4 +146,3 @@ dependencies {
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.48.1")
     kspAndroidTest("com.google.dagger:hilt-compiler:2.48.1")
 }
-
