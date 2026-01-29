@@ -1,13 +1,8 @@
 package com.HammersTech.RoutineChart.core.data.local
 
-import com.HammersTech.RoutineChart.core.domain.models.AgeBand
-import com.HammersTech.RoutineChart.core.domain.models.ChildProfile
 import com.HammersTech.RoutineChart.core.domain.models.Family
 import com.HammersTech.RoutineChart.core.domain.models.PlanTier
-import com.HammersTech.RoutineChart.core.domain.models.ReadingMode
-import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
-import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import com.HammersTech.RoutineChart.core.domain.usecases.CreateRoutineUseCase
@@ -20,21 +15,21 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Manages seeding initial data for testing
+ * Manages seeding initial routines (Morning, Bedtime) only when the user has no routines.
+ * Does not add children; parent can add children and assign routines later.
  */
 @Singleton
 class SeedDataManager @Inject constructor(
     private val familyRepository: FamilyRepository,
-    private val childProfileRepository: ChildProfileRepository,
     private val routineRepository: RoutineRepository,
     private val createRoutineUseCase: CreateRoutineUseCase,
-    private val routineAssignmentRepository: RoutineAssignmentRepository,
     private val userRepository: UserRepository
 ) {
     /**
      * Seeds demo routines (Morning, Bedtime) only when the user has no routines.
      * Call after sync so local DB may already have routines from Firestore.
      * When [familyId] is provided and the family exists, seeds into that family so new routines sync to the cloud.
+     * Does not create children or assignments.
      */
     suspend fun seedDataIfNeeded(userId: String, familyId: String? = null) = withContext(Dispatchers.IO) {
         AppLogger.Database.info("[Seed] seedDataIfNeeded entered, userId=$userId, familyId=$familyId")
@@ -45,82 +40,25 @@ class SeedDataManager @Inject constructor(
             return@withContext
         }
 
-        AppLogger.Database.info("[Seed] No routines found, seeding initial data...")
+        AppLogger.Database.info("[Seed] No routines found, seeding initial data (routines only, no children)...")
 
-        val family: Family
-        val children: List<ChildProfile>
-
-        if (familyId != null) {
-            val existingFamily = familyRepository.getById(familyId)
-            if (existingFamily != null) {
-                family = existingFamily
-                val existingChildren = childProfileRepository.getByFamilyId(familyId)
-                children = if (existingChildren.isEmpty()) {
-                    listOf(
-                        ChildProfile(
-                            id = UUID.randomUUID().toString(),
-                            familyId = family.id,
-                            displayName = "Emma",
-                            avatarIcon = "🌟",
-                            ageBand = AgeBand.AGE_5_7,
-                            readingMode = ReadingMode.LIGHT_TEXT,
-                            audioEnabled = true,
-                            createdAt = Instant.now()
-                        ),
-                        ChildProfile(
-                            id = UUID.randomUUID().toString(),
-                            familyId = family.id,
-                            displayName = "Noah",
-                            avatarIcon = "🚀",
-                            ageBand = AgeBand.AGE_8_10,
-                            readingMode = ReadingMode.FULL_TEXT,
-                            audioEnabled = true,
-                            createdAt = Instant.now()
-                        )
-                    ).also { list ->
-                        list.forEach { childProfileRepository.create(it) }
-                    }
-                } else {
-                    existingChildren
-                }
-            } else {
-                // familyId provided but not found - create new family and children
-                family = Family(
-                    id = UUID.randomUUID().toString(),
-                    name = "Test Family",
-                    timeZone = "America/Los_Angeles",
-                    weekStartsOn = 0,
-                    planTier = PlanTier.FREE,
-                    createdAt = Instant.now(),
-                    updatedAt = Instant.now()
-                )
-                familyRepository.create(family)
-                children = listOf(
-                    ChildProfile(
+        val family: Family = if (familyId != null) {
+            familyRepository.getById(familyId)
+                ?: run {
+                    val newFamily = Family(
                         id = UUID.randomUUID().toString(),
-                        familyId = family.id,
-                        displayName = "Emma",
-                        avatarIcon = "🌟",
-                        ageBand = AgeBand.AGE_5_7,
-                        readingMode = ReadingMode.LIGHT_TEXT,
-                        audioEnabled = true,
-                        createdAt = Instant.now()
-                    ),
-                    ChildProfile(
-                        id = UUID.randomUUID().toString(),
-                        familyId = family.id,
-                        displayName = "Noah",
-                        avatarIcon = "🚀",
-                        ageBand = AgeBand.AGE_8_10,
-                        readingMode = ReadingMode.FULL_TEXT,
-                        audioEnabled = true,
-                        createdAt = Instant.now()
+                        name = "Test Family",
+                        timeZone = "America/Los_Angeles",
+                        weekStartsOn = 0,
+                        planTier = PlanTier.FREE,
+                        createdAt = Instant.now(),
+                        updatedAt = Instant.now()
                     )
-                )
-                children.forEach { childProfileRepository.create(it) }
-            }
+                    familyRepository.create(newFamily)
+                    newFamily
+                }
         } else {
-            family = Family(
+            val newFamily = Family(
                 id = UUID.randomUUID().toString(),
                 name = "Test Family",
                 timeZone = "America/Los_Angeles",
@@ -129,34 +67,11 @@ class SeedDataManager @Inject constructor(
                 createdAt = Instant.now(),
                 updatedAt = Instant.now()
             )
-            familyRepository.create(family)
-            children = listOf(
-                ChildProfile(
-                    id = UUID.randomUUID().toString(),
-                    familyId = family.id,
-                    displayName = "Emma",
-                    avatarIcon = "🌟",
-                    ageBand = AgeBand.AGE_5_7,
-                    readingMode = ReadingMode.LIGHT_TEXT,
-                    audioEnabled = true,
-                    createdAt = Instant.now()
-                ),
-                ChildProfile(
-                    id = UUID.randomUUID().toString(),
-                    familyId = family.id,
-                    displayName = "Noah",
-                    avatarIcon = "🚀",
-                    ageBand = AgeBand.AGE_8_10,
-                    readingMode = ReadingMode.FULL_TEXT,
-                    audioEnabled = true,
-                    createdAt = Instant.now()
-                )
-            )
-            children.forEach { childProfileRepository.create(it) }
+            familyRepository.create(newFamily)
+            newFamily
         }
 
-        // Create Morning Routine
-        val morningRoutine = createRoutineUseCase(
+        createRoutineUseCase(
             userId = userId,
             familyId = family.id,
             title = "Morning Routine",
@@ -170,8 +85,7 @@ class SeedDataManager @Inject constructor(
             )
         )
 
-        // Create Bedtime Routine
-        val bedtimeRoutine = createRoutineUseCase(
+        createRoutineUseCase(
             userId = userId,
             familyId = family.id,
             title = "Bedtime Routine",
@@ -185,25 +99,6 @@ class SeedDataManager @Inject constructor(
             )
         )
 
-        // Assign both routines to both children
-        val routines = listOf(morningRoutine, bedtimeRoutine)
-
-        for (child in children) {
-            for (routine in routines) {
-                val assignment = com.HammersTech.RoutineChart.core.domain.models.RoutineAssignment(
-                    id = UUID.randomUUID().toString(),
-                    familyId = family.id,
-                    routineId = routine.id,
-                    childId = child.id,
-                    isActive = true,
-                    assignedAt = Instant.now(),
-                    deletedAt = null
-                )
-                routineAssignmentRepository.create(assignment)
-            }
-        }
-
-        AppLogger.Database.info("[Seed] Seed data created: 1 family, 2 children, 2 routines, 10 steps, 4 assignments")
+        AppLogger.Database.info("[Seed] Seed data created: 1 family, 2 routines, 10 steps (no children)")
     }
 }
-

@@ -32,8 +32,10 @@ final class AppDependencies: ObservableObject {
     let deriveStepCompletion: DeriveStepCompletionUseCase
     let deriveRoutineCompletion: DeriveRoutineCompletionUseCase
     
-    // Seed Data
+    // Seed Data (routines only, no children)
     let seedDataManager: SeedDataManager
+    // Mock Data (family + children + routines + assignments, for demos/testing)
+    let mockDataManager: MockDataManager
     
     // Combine cancellables
     private var cancellables = Set<AnyCancellable>()
@@ -97,8 +99,15 @@ final class AppDependencies: ObservableObject {
             deriveStepCompletion: deriveStepCompletion
         )
         
-        // Initialize seed data manager
+        // Initialize seed data manager (routines only, no children)
         self.seedDataManager = SeedDataManager(
+            familyRepo: familyRepo,
+            routineRepo: routineRepo,
+            stepRepo: stepRepo,
+            userRepo: userRepo
+        )
+        // Initialize mock data manager (full demo: family + children + routines + assignments)
+        self.mockDataManager = MockDataManager(
             familyRepo: familyRepo,
             childRepo: childRepo,
             routineRepo: routineRepo,
