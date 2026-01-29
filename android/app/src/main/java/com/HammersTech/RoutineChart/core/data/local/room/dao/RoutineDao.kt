@@ -37,13 +37,12 @@ interface RoutineDao {
     """)
     suspend fun getAll(userId: String, familyId: String?, includeDeleted: Boolean): List<RoutineEntity>
 
-    // Phase 3.2: Upload Queue - Get unsynced routines
+    // Phase 3.2: Upload Queue - Get unsynced routines (including soft-deleted so we sync deletedAt to Firestore)
     // Query by familyId if provided, otherwise by userId
     @Query("""
         SELECT * FROM routines 
         WHERE ((:familyId IS NOT NULL AND familyId = :familyId) OR (:familyId IS NULL AND userId = :userId))
-        AND synced = 0 
-        AND deletedAt IS NULL
+        AND synced = 0
     """)
     suspend fun getUnsynced(familyId: String?, userId: String): List<RoutineEntity>
 
