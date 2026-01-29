@@ -4,9 +4,9 @@ import com.HammersTech.RoutineChart.core.data.local.repositories.RoomChildProfil
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomCompletionEventRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyInviteRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomFamilyRepository
-import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineRepository
 import com.HammersTech.RoutineChart.core.data.local.repositories.RoomRoutineStepRepository
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.ChildProfileRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.CompletionEventRepository
@@ -50,7 +50,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRoutineAssignmentRepository(
-        impl: RoomRoutineAssignmentRepository
+        impl: CompositeRoutineAssignmentRepository
     ): RoutineAssignmentRepository
 
     @Binds

@@ -29,7 +29,7 @@ import java.time.Instant
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("familyId"), Index("routineId"), Index("childId")]
+    indices = [Index("familyId"), Index("routineId"), Index("childId"), Index("synced")]
 )
 data class RoutineAssignmentEntity(
     @PrimaryKey
@@ -39,7 +39,9 @@ data class RoutineAssignmentEntity(
     val childId: String,
     val isActive: Boolean,
     val assignedAt: Instant,
-    val deletedAt: Instant?
+    val updatedAt: Instant,
+    val deletedAt: Instant?,
+    val synced: Int = 0
 ) {
     fun toDomain(): RoutineAssignment = RoutineAssignment(
         id = id,
@@ -48,18 +50,21 @@ data class RoutineAssignmentEntity(
         childId = childId,
         isActive = isActive,
         assignedAt = assignedAt,
+        updatedAt = updatedAt,
         deletedAt = deletedAt
     )
 
     companion object {
-        fun fromDomain(assignment: RoutineAssignment): RoutineAssignmentEntity = RoutineAssignmentEntity(
+        fun fromDomain(assignment: RoutineAssignment, synced: Int = 0): RoutineAssignmentEntity = RoutineAssignmentEntity(
             id = assignment.id,
             familyId = assignment.familyId,
             routineId = assignment.routineId,
             childId = assignment.childId,
             isActive = assignment.isActive,
             assignedAt = assignment.assignedAt,
-            deletedAt = assignment.deletedAt
+            updatedAt = assignment.updatedAt,
+            deletedAt = assignment.deletedAt,
+            synced = synced
         )
     }
 }

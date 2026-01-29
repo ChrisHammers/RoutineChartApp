@@ -31,8 +31,10 @@ import com.HammersTech.RoutineChart.core.domain.models.User
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineRepository
 import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeUserRepository
 import com.HammersTech.RoutineChart.core.data.local.SeedDataManager
+import com.HammersTech.RoutineChart.core.data.remote.firebase.CompositeRoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.AuthRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.FamilyRepository
+import com.HammersTech.RoutineChart.core.domain.repositories.RoutineAssignmentRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.RoutineRepository
 import com.HammersTech.RoutineChart.core.domain.repositories.UserRepository
 import com.HammersTech.RoutineChart.core.utils.AppLogger
@@ -49,6 +51,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicReference
 import java.util.TimeZone
 import javax.inject.Inject
 
@@ -86,6 +89,7 @@ class MainViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val familyRepository: FamilyRepository,
     private val routineRepository: RoutineRepository,
+    private val assignmentRepository: RoutineAssignmentRepository,
     private val seedDataManager: SeedDataManager
 ) : ViewModel() {
     val authState: StateFlow<com.HammersTech.RoutineChart.core.domain.models.AuthUser?> = 
@@ -106,7 +110,10 @@ class MainViewModel @Inject constructor(
         started = SharingStarted.Eagerly,
         initialValue = null
     )
-    
+
+    // Guard: run sync+seed at most once per user (iOS does this via "skip if currentUser == authUser")
+    private val lastSyncedUserId = AtomicReference<String?>(null)
+
     init {
         android.util.Log.d("MainViewModel", "Auth state initialized. Current user: ${authRepository.currentUser}")
         
@@ -114,12 +121,20 @@ class MainViewModel @Inject constructor(
         // Also trigger routine upload for existing users
         viewModelScope.launch {
             authState.collect { authUser ->
-                if (authUser != null && !authUser.isAnonymous) {
-                    // Non-anonymous user (parent) - check if User record exists
-                    val existingUser = userRepository.getById(authUser.id)
-                    if (existingUser != null) {
-                        // User exists - ensure user document is in Firestore and trigger routine upload
-                        if (userRepository is CompositeUserRepository) {
+                if (authUser == null || authUser.isAnonymous) {
+                    lastSyncedUserId.set(null)
+                    return@collect
+                }
+                // Non-anonymous user (parent) - check if User record exists
+                val existingUser = userRepository.getById(authUser.id)
+                if (existingUser != null) {
+                    // Safeguard: skip if we already ran sync+seed for this user (prevents duplicate seed when authState re-emits)
+                    if (existingUser.id == lastSyncedUserId.get()) {
+                        AppLogger.Database.info("✅ User already synced: ${existingUser.id}, skipping sync/seed")
+                        return@collect
+                    }
+                    // User exists - ensure user document is in Firestore and trigger routine upload
+                    if (userRepository is CompositeUserRepository) {
                             try {
                                 userRepository.syncToFirestore(existingUser)
                                 AppLogger.Database.info("✅ Ensured user document exists in Firestore before routine upload")
@@ -153,6 +168,19 @@ class MainViewModel @Inject constructor(
                                             AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
                                         }
                                     }
+                                    // Phase 3.5: Sync assignments (upload then pull)
+                                    if (assignmentRepository is CompositeRoutineAssignmentRepository) {
+                                        try {
+                                            assignmentRepository.uploadUnsynced(existingUser.familyId)
+                                            val pulledAssignments = assignmentRepository.pullAssignments(existingUser.familyId)
+                                            if (pulledAssignments > 0) {
+                                                AppLogger.Database.info("✅ Pulled $pulledAssignments assignment(s) from Firestore on app launch")
+                                            }
+                                        } catch (e: Exception) {
+                                            AppLogger.Database.error("⚠️ Failed to sync assignments: ${e.message}", e)
+                                        }
+                                    }
+                                    lastSyncedUserId.set(existingUser.id)
                                 } catch (e: Exception) {
                                     AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)
                                 }
@@ -160,7 +188,7 @@ class MainViewModel @Inject constructor(
                         }
                         return@collect
                     }
-                    
+
                     // No User record exists - create Family and User
                     try {
                         val timeZone = TimeZone.getDefault().id
@@ -220,6 +248,16 @@ class MainViewModel @Inject constructor(
                                     if (uploadedAfterSeed > 0) {
                                         AppLogger.Database.info("✅ Uploaded $uploadedAfterSeed seed routine(s) to Firestore")
                                     }
+                                    // Phase 3.5: Sync assignments (upload then pull)
+                                    if (assignmentRepository is CompositeRoutineAssignmentRepository) {
+                                        try {
+                                            assignmentRepository.uploadUnsynced(newUser.familyId)
+                                            assignmentRepository.pullAssignments(newUser.familyId)
+                                        } catch (e: Exception) {
+                                            AppLogger.Database.error("⚠️ Failed to sync assignments: ${e.message}", e)
+                                        }
+                                    }
+                                    lastSyncedUserId.set(newUser.id)
                                 } catch (e: Exception) {
                                     AppLogger.Database.error("⚠️ Failed to sync routines: ${e.message}", e)
                                 }
@@ -232,7 +270,6 @@ class MainViewModel @Inject constructor(
                         AppLogger.Database.error("Failed to create family and user for parent", e)
                         android.util.Log.e("MainViewModel", "Failed to create family and user", e)
                     }
-                }
             }
         }
     }

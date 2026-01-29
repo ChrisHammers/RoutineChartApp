@@ -30,5 +30,15 @@ interface RoutineAssignmentDao {
 
     @Query("SELECT * FROM routine_assignments WHERE routineId = :routineId AND deletedAt IS NULL")
     suspend fun getByRoutineId(routineId: String): List<RoutineAssignmentEntity>
+
+    // Phase 3.5: Upload queue - get unsynced assignments (including soft-deleted so we sync deletedAt to Firestore)
+    @Query("SELECT * FROM routine_assignments WHERE familyId = :familyId AND synced = 0")
+    suspend fun getUnsynced(familyId: String): List<RoutineAssignmentEntity>
+
+    @Query("UPDATE routine_assignments SET synced = 1 WHERE id = :assignmentId")
+    suspend fun markAsSynced(assignmentId: String)
+
+    @Query("UPDATE routine_assignments SET synced = 1 WHERE id IN (:assignmentIds)")
+    suspend fun markAsSynced(assignmentIds: List<String>)
 }
 

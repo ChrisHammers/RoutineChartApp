@@ -13,6 +13,7 @@ data class RoutineAssignment(
     val childId: String,
     val isActive: Boolean,
     val assignedAt: Instant,
+    val updatedAt: Instant = assignedAt,
     val deletedAt: Instant?
 ) {
     companion object {

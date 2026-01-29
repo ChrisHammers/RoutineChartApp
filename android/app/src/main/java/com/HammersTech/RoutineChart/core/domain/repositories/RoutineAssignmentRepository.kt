@@ -14,5 +14,6 @@ interface RoutineAssignmentRepository {
     suspend fun getActiveByChildId(childId: String): List<RoutineAssignment>
     fun observeActiveByChildId(childId: String): Flow<List<RoutineAssignment>>
     suspend fun getByRoutineId(routineId: String): List<RoutineAssignment>
+    suspend fun softDelete(id: String)
 }
 

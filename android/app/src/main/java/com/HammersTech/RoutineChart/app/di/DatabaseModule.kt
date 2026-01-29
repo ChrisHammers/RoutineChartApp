@@ -38,7 +38,9 @@ object DatabaseModule {
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_3_4,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_4_5,
                 com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_5_6,
-                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_6_7
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_6_7,
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_7_8,
+                com.HammersTech.RoutineChart.core.data.local.room.migrations.MIGRATION_8_9
             )
             .fallbackToDestructiveMigration() // Phase 1: Dev only - remove in production
             .build()
